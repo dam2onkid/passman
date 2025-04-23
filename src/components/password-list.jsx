@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 export function PasswordList({ onSelectEntry, selectedEntryId }) {
   const [searchQuery, setSearchQuery] = useState("");
   const groupedEntries = groupPasswordEntriesByCategory();
-  
+
   // Filter entries based on search query
   const filteredGroupedEntries = {};
   if (searchQuery.trim() === "") {
@@ -16,12 +16,13 @@ export function PasswordList({ onSelectEntry, selectedEntryId }) {
     Object.assign(filteredGroupedEntries, groupedEntries);
   } else {
     // Filter entries based on search query
-    Object.keys(groupedEntries).forEach(category => {
-      const filteredEntries = groupedEntries[category].filter(entry => 
-        entry.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        entry.username.toLowerCase().includes(searchQuery.toLowerCase())
+    Object.keys(groupedEntries).forEach((category) => {
+      const filteredEntries = groupedEntries[category].filter(
+        (entry) =>
+          entry.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          entry.username.toLowerCase().includes(searchQuery.toLowerCase())
       );
-      
+
       if (filteredEntries.length > 0) {
         filteredGroupedEntries[category] = filteredEntries;
       }
@@ -43,40 +44,44 @@ export function PasswordList({ onSelectEntry, selectedEntryId }) {
           />
         </div>
       </div>
-      
+
       {/* Password entries list */}
-      <div className="flex-1 overflow-auto">
-        {Object.keys(filteredGroupedEntries).sort().map(category => (
-          <div key={category} className="border-b last:border-0">
-            {/* Category header */}
-            <div className="sticky top-0 z-10 bg-muted/50 px-4 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur-sm">
-              {category}
+      <div className="group h-[calc(100vh-134px)] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden hover:[scrollbar-width:thin] hover:[-ms-overflow-style:auto] hover:[&::-webkit-scrollbar]:block hover:[&::-webkit-scrollbar]:w-1.5 hover:[&::-webkit-scrollbar-thumb]:bg-gray-200 hover:[&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-track]:bg-transparent">
+        {Object.keys(filteredGroupedEntries)
+          .sort()
+          .map((category) => (
+            <div key={category} className="border-b last:border-0">
+              {/* Category header */}
+              <div className="sticky top-0 z-10 bg-muted/50 px-4 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur-sm">
+                {category}
+              </div>
+
+              {/* Category entries */}
+              <div>
+                {filteredGroupedEntries[category].map((entry) => (
+                  <button
+                    key={entry.id}
+                    className={cn(
+                      "flex w-full items-center gap-3 px-4 py-2 hover:bg-muted/50",
+                      selectedEntryId === entry.id && "bg-muted"
+                    )}
+                    onClick={() => onSelectEntry(entry)}
+                  >
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted/50">
+                      <entry.icon className="h-4 w-4" />
+                    </div>
+                    <div className="flex flex-col items-start text-sm">
+                      <span className="font-medium">{entry.name}</span>
+                      <span className="text-muted-foreground">
+                        {entry.username}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
-            
-            {/* Category entries */}
-            <div>
-              {filteredGroupedEntries[category].map(entry => (
-                <button
-                  key={entry.id}
-                  className={cn(
-                    "flex w-full items-center gap-3 px-4 py-2 hover:bg-muted/50",
-                    selectedEntryId === entry.id && "bg-muted"
-                  )}
-                  onClick={() => onSelectEntry(entry)}
-                >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted/50">
-                    <entry.icon className="h-4 w-4" />
-                  </div>
-                  <div className="flex flex-col items-start text-sm">
-                    <span className="font-medium">{entry.name}</span>
-                    <span className="text-muted-foreground">{entry.username}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-        
+          ))}
+
         {/* Empty state */}
         {Object.keys(filteredGroupedEntries).length === 0 && (
           <div className="flex h-full items-center justify-center p-8 text-center">
