@@ -14,6 +14,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { PasswordManager } from "@/components/password-manager";
+import { HeaderNewItemButton } from "@/components/header-new-item-button";
 
 export default function Page() {
   return (
@@ -21,7 +22,7 @@ export default function Page() {
       <AppSidebar />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
+          <div className="flex items-center gap-2 px-4 w-full">
             <SidebarTrigger className="-ml-1" />
             <Separator
               orientation="vertical"
@@ -38,6 +39,7 @@ export default function Page() {
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
+            <HeaderNewItemButton />
           </div>
         </header>
         <div className="flex flex-1 flex-col h-[calc(100vh-4rem)]">
