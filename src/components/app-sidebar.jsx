@@ -1,172 +1,102 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
+import { usePathname } from "next/navigation";
 import {
   AudioWaveform,
-  BookOpen,
-  Bot,
   Command,
-  Frame,
+  Star,
+  List,
   GalleryVerticalEnd,
-  Map,
-  PieChart,
-  Settings2,
-  SquareTerminal,
-} from "lucide-react"
+} from "lucide-react";
 
-import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
-import { NavUser } from "@/components/nav-user"
-import { TeamSwitcher } from "@/components/team-switcher"
+import { NavMain } from "@/components/nav-main";
+import { NavUser } from "@/components/nav-user";
+import { TeamSwitcher } from "@/components/team-switcher";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
 // This is sample data.
 const data = {
   user: {
-    name: "shadcn",
+    name: "Nam Nguyen",
     email: "m@example.com",
     avatar: "/avatars/shadcn.jpg",
   },
   teams: [
     {
-      name: "Acme Inc",
-      logo: GalleryVerticalEnd,
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: AudioWaveform,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
+      name: "Personal",
       logo: Command,
       plan: "Free",
     },
   ],
   navMain: [
     {
-      title: "Playground",
-      url: "#",
-      icon: SquareTerminal,
-      isActive: true,
-      items: [
-        {
-          title: "History",
-          url: "#",
-        },
-        {
-          title: "Starred",
-          url: "#",
-        },
-        {
-          title: "Settings",
-          url: "#",
-        },
-      ],
+      title: "All Items",
+      url: "/dashboard/all-items",
+      icon: List,
     },
     {
-      title: "Models",
-      url: "#",
-      icon: Bot,
-      items: [
-        {
-          title: "Genesis",
-          url: "#",
-        },
-        {
-          title: "Explorer",
-          url: "#",
-        },
-        {
-          title: "Quantum",
-          url: "#",
-        },
-      ],
+      title: "Favorites",
+      url: "/dashboard/favorites",
+      icon: Star,
     },
     {
-      title: "Documentation",
-      url: "#",
-      icon: BookOpen,
-      items: [
-        {
-          title: "Introduction",
-          url: "#",
-        },
-        {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Settings",
-      url: "#",
-      icon: Settings2,
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
+      title: "Watchtower",
+      url: "/dashboard/watchtower",
+      icon: GalleryVerticalEnd,
     },
   ],
-  projects: [
+  categories: [
     {
-      name: "Design Engineering",
+      title: "Archive",
       url: "#",
-      icon: Frame,
+      icon: AudioWaveform,
     },
     {
-      name: "Sales & Marketing",
+      title: "Recently Deleted",
       url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: Map,
+      icon: AudioWaveform,
     },
   ],
-}
+  tags: [],
+};
 
-export function AppSidebar({
-  ...props
-}) {
+export function AppSidebar({ ...props }) {
+  const pathname = usePathname();
+
+  // Add isActive property to navigation items based on current path
+  const navMainWithActive = data.navMain.map((item) => {
+    // For the All Items route, also mark active for root and /dashboard paths
+    if (item.url === "/dashboard/all-items") {
+      return {
+        ...item,
+        isActive:
+          pathname === "/dashboard/all-items" ||
+          pathname === "/dashboard" ||
+          pathname === "/",
+      };
+    }
+
+    // For other routes, check if the pathname exactly matches or starts with the item's URL
+    return {
+      ...item,
+      isActive: pathname === item.url || pathname.startsWith(`${item.url}/`),
+    };
+  });
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <TeamSwitcher teams={data.teams} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
+        <NavMain items={navMainWithActive} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />
