@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { NewItemModalManager } from "@/components/new-item-modal/new-item-modal-manager";
+import { SuiProviders } from "@/lib/sui-provider";
 
 import "./globals.css";
 
@@ -32,8 +33,10 @@ export default function RootLayout({ children }) {
           enableSystem
           disableTransitionOnChange
         >
-          {children}
-          <NewItemModalManager />
+          <SuiProviders>
+            {children}
+            <NewItemModalManager />
+          </SuiProviders>
         </ThemeProvider>
       </body>
     </html>

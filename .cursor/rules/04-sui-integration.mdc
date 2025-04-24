@@ -1,0 +1,51 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Sui Blockchain Integration
+
+## Provider Architecture
+The application integrates with Sui blockchain using @mysten/dapp-kit with the following structure:
+
+- **Provider Setup** - [src/lib/sui-provider.js](mdc:src/lib/sui-provider.js)
+  - Configures network connections (localnet, testnet, mainnet)
+  - Optimizes React Query for blockchain interactions
+  - Wraps application with necessary providers
+
+- **Layout Integration** - [src/app/layout.js](mdc:src/app/layout.js)
+  - Applies providers at application root
+  - Enables wallet functionality throughout the app
+
+## Custom Hooks
+- **Wallet Hook** - [src/hooks/use-sui-wallet.js](mdc:src/hooks/use-sui-wallet.js)
+  - Simplifies wallet interactions
+  - Provides connection status and wallet address
+  - Handles transaction signing and execution
+
+## UI Components
+- **Connect Button** - [src/components/wallet-connect-button.jsx](mdc:src/components/wallet-connect-button.jsx)
+  - Manages wallet connection states
+  - Shows truncated wallet address when connected
+  - Follows project styling conventions
+
+## Usage Guidelines
+```jsx
+// Access wallet functionality
+const { isConnected, walletAddress, connect, signAndExecute } = useSuiWallet();
+
+// Execute transactions
+signAndExecute({
+  transactionBlock,
+  options: { showEffects: true }
+});
+
+// Add connect button to UI
+<WalletConnectButton className="my-custom-class" />
+```
+
+## Performance Best Practices
+- Use the configured QueryClient for data fetching
+- Implement appropriate error handling for transactions
+- Cache frequently accessed blockchain data
+- Mark client components with 'use client' directive

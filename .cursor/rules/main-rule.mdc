@@ -47,6 +47,15 @@ alwaysApply: false
 - Memoize expensive calculations
 - Use appropriate key props in lists
 - Implement proper data fetching strategies
+- Configure React Query with appropriate stale/cache times
+- Follow [Next.js optimization best practices](mdc:.cursor/rules/05-nextjs-optimization.mdc)
+
+### Sui Blockchain Integration
+- Use @mysten/dapp-kit for all Sui blockchain interactions
+- Access wallet functionality through the useSuiWallet hook
+- Handle wallet connection states appropriately in UI components
+- Implement proper error handling for blockchain transactions
+- Follow the [Sui Integration architecture](mdc:.cursor/rules/04-sui-integration.mdc)
 
 ### Forms & Inputs
 - Implement proper form validation
