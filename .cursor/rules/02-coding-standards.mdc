@@ -1,0 +1,37 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Coding Standards
+
+## Component Structure
+1. Use functional components with hooks
+2. Follow the component naming convention:
+   - Components should be PascalCase
+   - Files should match their component names
+   - Place components in appropriate directories based on their scope
+
+## Styling Guidelines
+1. Use Tailwind CSS classes exclusively for styling
+2. Prefer `class:` syntax over ternary operators for conditional classes
+3. Follow mobile-first responsive design principles
+4. Use Shadcn UI components when available
+
+## JavaScript/TypeScript Practices
+1. Use early returns to reduce nesting and improve readability
+2. Event handler functions should be prefixed with "handle"
+   Example: `handleClick`, `handleSubmit`, `handleKeyDown`
+3. Use descriptive variable and function names
+4. Implement proper error handling and loading states
+
+## State Management
+1. Use React hooks for local state
+2. Implement Zustand for global state management
+3. Keep state logic separated in custom hooks when complex
+
+## Performance
+1. Implement proper component memoization when needed
+2. Use Next.js Image component for optimized images
+3. Implement proper loading and error states
+4. Use dynamic imports for code splitting when appropriate

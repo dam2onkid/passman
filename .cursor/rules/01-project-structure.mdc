@@ -1,0 +1,27 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Project Structure Guide
+
+This Next.js project follows a structured organization pattern:
+
+## Core Directories
+- [src/app](mdc:src/app): Contains the application routes and pages using Next.js App Router
+- [src/components](mdc:src/components): Reusable UI components
+- [src/lib](mdc:src/lib): Utility functions, configurations, and shared logic
+- [src/hooks](mdc:src/hooks): Custom React hooks
+- [src/constants](mdc:src/constants): Application-wide constants and configurations
+
+## Configuration Files
+- [next.config.mjs](mdc:next.config.mjs): Next.js configuration
+- [components.json](mdc:components.json): Shadcn UI components configuration
+- [jsconfig.json](mdc:jsconfig.json): JavaScript/TypeScript configuration
+- [postcss.config.mjs](mdc:postcss.config.mjs): PostCSS configuration for Tailwind
+
+## Best Practices
+1. Keep components small and focused on a single responsibility
+2. Place page-specific components within their respective page directories
+3. Use the lib directory for shared business logic
+4. Keep constants organized by domain in the constants directory
