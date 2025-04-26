@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { PasswordList } from "@/components/password-list";
 import { PasswordDetail } from "@/components/password-detail";
-import { passwordEntries } from "@/lib/password-data";
 
 export function PasswordManager() {
   const [selectedEntry, setSelectedEntry] = useState(null);
