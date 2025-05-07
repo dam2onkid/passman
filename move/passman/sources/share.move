@@ -2,7 +2,7 @@ module passman::share;
 
 use sui::clock::Clock;
 use sui::event;
-use passman::vault::{Item, Cap};
+use passman::vault::{ Item, Cap };
 
 // === Error ===
 const ENotOwner: u64 = 1;
@@ -51,19 +51,14 @@ public entry fun share_item_entry(cap: &Cap, item: &Item, recipients: vector<add
     transfer::share_object(share)
 }
 
-fun check_policy(share: &Share, caller: address, c: &Clock): bool {
-    if(!share.recipients.contains(&caller)) {
-        return false
-    };
-    if(share.one_time_access && share.consumed) {
-        return false
-    };
-    if(c.timestamp_ms() > share.created_at + share.ttl ){
-        return false
-    };
+fun check_policy(item: &Item, share: &Share, caller: address, c: &Clock): bool {
+    if(share.item_id != object::id(item)) return false;
+    if(!share.recipients.contains(&caller)) return false;
+    if(share.one_time_access && share.consumed) return false;
+    if(c.timestamp_ms() > share.created_at + share.ttl )return false ;
     true
 }
 
-entry fun seal_approve(share: &Share, c: &Clock, ctx: &TxContext) {
-    assert!(check_policy(share, ctx.sender(), c), ENoAccess)
+entry fun seal_approve(item: &Item ,share: &Share, c: &Clock, ctx: &TxContext) {
+    assert!(check_policy(item, share, ctx.sender(), c), ENoAccess)
 }

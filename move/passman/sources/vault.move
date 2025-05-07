@@ -3,7 +3,6 @@ module passman::vault;
 use std::string::String;
 use sui::event;
 
-
 // === Error ===
 const ENotOwner: u64 = 1;
 const ENoAccess: u64 = 2;
@@ -40,6 +39,18 @@ public struct ItemCreated has copy, drop {
     category: String,
 }
 
+public struct ItemUpdated has copy, drop {
+    item_id: ID,
+    vault_id: ID,
+    name: String,
+}
+
+public struct ItemDeleted has copy, drop {
+    item_id: ID,
+    vault_id: ID,
+    name: String,
+}
+
 // === Function ===
 fun create_vault(name: String, ctx: &mut TxContext): (Vault, Cap) {
     let vault = Vault { id: object::new(ctx), name };
@@ -56,6 +67,29 @@ fun create_item(cap: &Cap, name: String, category: String, vault: &Vault, data: 
         vault_id: object::id(vault),
         data,
     }
+}
+
+entry fun update_item(cap: &Cap, name: String, vault: &Vault, data: vector<u8>, item: &mut Item) {
+    assert!(cap.vault_id == item.vault_id, ENotOwner);
+    item.name = name;
+    item.data = data;
+    item.vault_id = object::id(vault);
+
+    event::emit(ItemUpdated { item_id: object::id(item), vault_id: item.vault_id, name: item.name });
+}
+
+entry fun delete_item(cap: &Cap, item: Item) {
+    assert!(cap.vault_id == item.vault_id, ENotOwner);
+    event::emit(ItemDeleted { item_id: object::id(&item), vault_id: item.vault_id, name: item.name });
+
+    let Item {
+        id,
+        name: _,
+        category: _,
+        vault_id: _,
+        data: _,
+    } = item;
+    object::delete(id)
 }
 
 // === Entry ===
