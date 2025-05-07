@@ -42,7 +42,6 @@ public struct ItemCreated has copy, drop {
 public struct ItemUpdated has copy, drop {
     item_id: ID,
     vault_id: ID,
-    name: String,
 }
 
 public struct ItemDeleted has copy, drop {
@@ -75,20 +74,14 @@ entry fun update_item(cap: &Cap, name: String, vault: &Vault, data: vector<u8>, 
     item.data = data;
     item.vault_id = object::id(vault);
 
-    event::emit(ItemUpdated { item_id: object::id(item), vault_id: item.vault_id, name: item.name });
+    event::emit(ItemUpdated { item_id: object::id(item), vault_id: item.vault_id });
 }
 
 entry fun delete_item(cap: &Cap, item: Item) {
     assert!(cap.vault_id == item.vault_id, ENotOwner);
     event::emit(ItemDeleted { item_id: object::id(&item), vault_id: item.vault_id, name: item.name });
 
-    let Item {
-        id,
-        name: _,
-        category: _,
-        vault_id: _,
-        data: _,
-    } = item;
+    let Item { id, .. } = item;
     object::delete(id)
 }
 
@@ -122,4 +115,39 @@ fun check_policy(cap: &Cap, item: &Item): bool {
 
 entry fun seal_approve(cap: &Cap, item: &Item) {
     assert!(check_policy(cap, item), ENoAccess)
+}
+
+// === Test ===
+
+#[test]
+fun new_vault_for_testing(): (Cap, Vault) {
+    use std::string::utf8;
+    let ctx = &mut tx_context::dummy();
+    let (vault, cap) = create_vault(utf8(b"test"), ctx);
+
+    (cap, vault)
+}
+#[test_only]
+fun destroy_for_testing(cap: Cap, vault: Vault) {
+    let Cap { id, .. } = cap;
+    object::delete(id);
+    let Vault { id, .. } = vault;
+    object::delete(id);
+}
+
+#[test]
+fun new_item_for_testing(): Item {
+    use std::string::utf8;
+    let ctx = &mut tx_context::dummy();
+    let (cap, vault) = new_vault_for_testing();
+    let item = create_item(
+        &cap,
+        utf8(b"item_1"),
+        utf8(b"wallet"),
+        &vault,
+        vector::empty(),
+        ctx
+    );
+    destroy_for_testing(cap, vault);
+    item
 }
