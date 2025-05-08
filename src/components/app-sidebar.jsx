@@ -12,7 +12,7 @@ import {
 
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
-import { TeamSwitcher } from "@/components/team-switcher";
+import { VaultSwitcher } from "@/components/vault-switcher";
 import {
   Sidebar,
   SidebarContent,
@@ -93,7 +93,7 @@ export function AppSidebar({ ...props }) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <VaultSwitcher />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMainWithActive} />
