@@ -27,16 +27,35 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import useVaults from "@/hooks/use-fetch-vaults";
+import { useSuiWallet } from "@/hooks/use-sui-wallet";
+import { Transaction } from "@mysten/sui/transactions";
+import { PACKAGE_ID } from "@/constants/config";
 
 export function VaultSwitcher() {
   const { isMobile } = useSidebar();
+  const { signAndExecuteTransaction } = useSuiWallet();
   const [isAddVaultModalOpen, setIsAddVaultModalOpen] = React.useState(false);
   const [activeVaultCapPair, setActiveVaultCapPair] = React.useState(null);
-  const { vaultCapPairs, loading } = useVaults();
+  const { vaultCapPairs, loading, refetch } = useVaults();
 
   const handleCreateVault = (newVault) => {
-    setActiveVaultCapPair((prev) => [...prev, newVault]);
-    setIsAddVaultModalOpen(false);
+    const tx = new Transaction();
+    tx.moveCall({
+      target: `${PACKAGE_ID}::vault::create_vault_entry`,
+      arguments: [tx.pure.string(newVault.name)],
+    });
+    tx.setGasBudget(10000000);
+    signAndExecuteTransaction(
+      {
+        transaction: tx,
+      },
+      {
+        onSuccess: async (result) => {
+          setIsAddVaultModalOpen(false);
+          refetch();
+        },
+      }
+    );
   };
 
   React.useEffect(() => {

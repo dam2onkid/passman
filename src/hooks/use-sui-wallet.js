@@ -13,7 +13,18 @@ import "@mysten/dapp-kit/dist/index.css";
 export function useSuiWallet() {
   const client = useSuiClient();
   const currentAccount = useCurrentAccount();
-  const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
+  const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction({
+    execute: async ({ bytes, signature }) =>
+      await client.executeTransactionBlock({
+        transactionBlock: bytes,
+        signature,
+        options: {
+          showRawEffects: true,
+          showEffects: true,
+        },
+      }),
+  });
+
   const { mutate: connect } = useConnectWallet();
   const { mutate: disconnect } = useDisconnectWallet();
 

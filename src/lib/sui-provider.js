@@ -15,14 +15,14 @@ const { networkConfig } = createNetworkConfig({
   testnet: {
     url: getFullnodeUrl("testnet"),
     variables: {
-      packageId: PACKAGE_ID,
+      passman: PACKAGE_ID,
       gqlClient: "https://sui-testnet.mystenlabs.com/graphql",
     },
   },
   mainnet: {
     url: getFullnodeUrl("mainnet"),
     variables: {
-      packageId: PACKAGE_ID,
+      passman: PACKAGE_ID,
       gqlClient: "https://sui-mainnet.mystenlabs.com/graphql",
     },
   },
