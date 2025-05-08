@@ -107,7 +107,9 @@ export function VaultSwitcher() {
                 className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
               >
                 <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                  <activeVault.logo className="size-4" />
+                  <p className="text-sm font-bold text-white">
+                    {activeVault.name.charAt(0)}
+                  </p>
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">
@@ -133,7 +135,9 @@ export function VaultSwitcher() {
                   className="gap-2 p-2"
                 >
                   <div className="flex size-6 items-center justify-center rounded-md border">
-                    <vault.logo className="size-3.5 shrink-0" />
+                    <p className="text-xs font-bold text-white">
+                      {vault.name.charAt(0)}
+                    </p>
                   </div>
                   {vault.name}
                 </DropdownMenuItem>
