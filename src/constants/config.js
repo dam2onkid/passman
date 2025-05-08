@@ -1,1 +1,2 @@
-export const PACKAGE_ID = process.env.PACKAGE_ID;
+export const PACKAGE_ID =
+  "0x8b5a3e30c84dbd02a7913b3e2bcf89666cc732d75736871680521c4562b796d7";

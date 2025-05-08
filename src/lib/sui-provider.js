@@ -8,12 +8,24 @@ import {
 import { getFullnodeUrl } from "@mysten/sui/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React, { useState } from "react";
+import { PACKAGE_ID } from "@/constants/config";
 
 // Create a constant network configuration
 const { networkConfig } = createNetworkConfig({
-  localnet: { url: getFullnodeUrl("localnet") },
-  testnet: { url: getFullnodeUrl("testnet") },
-  mainnet: { url: getFullnodeUrl("mainnet") },
+  testnet: {
+    url: getFullnodeUrl("testnet"),
+    variables: {
+      packageId: PACKAGE_ID,
+      gqlClient: "https://sui-testnet.mystenlabs.com/graphql",
+    },
+  },
+  mainnet: {
+    url: getFullnodeUrl("mainnet"),
+    variables: {
+      packageId: PACKAGE_ID,
+      gqlClient: "https://sui-mainnet.mystenlabs.com/graphql",
+    },
+  },
 });
 
 // Default network to connect to

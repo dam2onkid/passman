@@ -26,75 +26,64 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-const vaults = [
-  {
-    name: "Personal",
-    logo: Vault,
-  },
-  {
-    name: "Work",
-    logo: Vault,
-  },
-];
-
-function AddVaultModal({ isOpen, onClose, onCreateVault }) {
-  const [vaultName, setVaultName] = React.useState("");
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (vaultName.trim()) {
-      onCreateVault({
-        name: vaultName.trim(),
-        logo: Vault,
-      });
-      setVaultName("");
-    }
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Add New Vault</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Input
-                id="vaultName"
-                placeholder="Enter vault name"
-                value={vaultName}
-                onChange={(e) => setVaultName(e.target.value)}
-                autoFocus
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="submit" disabled={!vaultName.trim()}>
-              Create Vault
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
+import useVaults from "@/hooks/use-fetch-vaults";
 
 export function VaultSwitcher() {
   const { isMobile } = useSidebar();
-  const [activeVault, setActiveVault] = React.useState(vaults[0]);
   const [isAddVaultModalOpen, setIsAddVaultModalOpen] = React.useState(false);
-  const [localVaults, setLocalVaults] = React.useState(vaults);
+  const [activeVaultCapPair, setActiveVaultCapPair] = React.useState(null);
+  const { vaultCapPairs, loading } = useVaults();
 
   const handleCreateVault = (newVault) => {
-    setLocalVaults((prev) => [...prev, newVault]);
+    setActiveVaultCapPair((prev) => [...prev, newVault]);
     setIsAddVaultModalOpen(false);
   };
 
-  if (!activeVault) {
-    return null;
+  React.useEffect(() => {
+    if (vaultCapPairs.length === 0 || loading) return;
+    if (!activeVaultCapPair) {
+      setActiveVaultCapPair(vaultCapPairs[0]);
+    }
+  }, [vaultCapPairs, activeVaultCapPair, loading]);
+
+  const filteredVaultCapPairs = vaultCapPairs
+    .filter(({ vault }) => vault?.id !== activeVaultCapPair?.vault?.id)
+    .map(({ vault, cap }) => ({
+      vault,
+      cap,
+    }));
+
+  if (loading) {
+    return (
+      <div className="animate-pulse flex space-x-4">
+        <div className="bg-gray-300 h-8 w-8 rounded-lg"></div>
+        <div className="flex-1 space-y-4 py-1">
+          <div className="h-4 bg-gray-300 rounded w-3/4"></div>
+        </div>
+      </div>
+    );
   }
+
+  if (vaultCapPairs.length === 0)
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            size="lg"
+            className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+          >
+            <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+              <p className="text-sm font-bold text-white">
+                <Plus className="size-4" />
+              </p>
+            </div>
+            <div className="grid flex-1 text-left text-sm leading-tight">
+              <span className="truncate font-medium">Add vault</span>
+            </div>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    );
 
   return (
     <>
@@ -108,12 +97,12 @@ export function VaultSwitcher() {
               >
                 <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
                   <p className="text-sm font-bold text-white">
-                    {activeVault.name.charAt(0)}
+                    {activeVaultCapPair?.vault?.name?.charAt(0)}
                   </p>
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">
-                    {activeVault.name}
+                    {activeVaultCapPair?.vault?.name}
                   </span>
                 </div>
                 <ChevronsUpDown className="ml-auto" />
@@ -128,10 +117,10 @@ export function VaultSwitcher() {
               <DropdownMenuLabel className="text-muted-foreground text-xs">
                 Vaults
               </DropdownMenuLabel>
-              {localVaults.map((vault, index) => (
+              {filteredVaultCapPairs.map(({ vault, cap }, index) => (
                 <DropdownMenuItem
                   key={vault.name}
-                  onClick={() => setActiveVault(vault)}
+                  onClick={() => setActiveVaultCapPair({ vault, cap })}
                   className="gap-2 p-2"
                 >
                   <div className="flex size-6 items-center justify-center rounded-md border">
@@ -165,5 +154,48 @@ export function VaultSwitcher() {
         onCreateVault={handleCreateVault}
       />
     </>
+  );
+}
+
+function AddVaultModal({ isOpen, onClose, onCreateVault }) {
+  const [vaultName, setVaultName] = React.useState("");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (vaultName.trim()) {
+      onCreateVault({
+        name: vaultName.trim(),
+        logo: Vault,
+      });
+      setVaultName("");
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Create Vault</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Input
+                id="vaultName"
+                placeholder="Enter vault name"
+                value={vaultName}
+                onChange={(e) => setVaultName(e.target.value)}
+                autoFocus
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit" disabled={!vaultName.trim()}>
+              Create
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
