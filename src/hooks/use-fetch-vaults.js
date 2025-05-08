@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
 import { useSuiWallet } from "./use-sui-wallet";
 import { PACKAGE_ID } from "@/constants/config";
+import useVaultStore from "@/store/vault-store";
 
 const INTERVAL = 3000;
 
-export default function useFetchVaults() {
+export default function useVaults() {
   const { currentAccount, client: suiClient, isConnected } = useSuiWallet();
   const [vaultCapPairs, setVaultCapPairs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { activeVaultCapPair, setActiveVaultCapPair } = useVaultStore();
 
   async function fetchVaultsAndCaps() {
     if (!currentAccount?.address) {
@@ -71,6 +73,18 @@ export default function useFetchVaults() {
       }
 
       setVaultCapPairs(pairs);
+
+      // Update the active vault if needed
+      if (pairs.length > 0) {
+        // If there's no active vault or the active vault no longer exists
+        const activeVaultExists =
+          activeVaultCapPair &&
+          pairs.some((pair) => pair.vault.id === activeVaultCapPair.vault?.id);
+
+        if (!activeVaultExists) {
+          setActiveVaultCapPair(pairs[0]);
+        }
+      }
     } catch (err) {
       setError(err.message || "Failed to fetch vaults");
     } finally {
@@ -86,12 +100,12 @@ export default function useFetchVaults() {
 
   useEffect(() => {
     fetchVaultsAndCaps();
-
-    // Set up polling interval for real-time updates
-    // const intervalId = setInterval(fetchVaultsAndCaps, INTERVAL);
-
-    // return () => clearInterval(intervalId);
   }, [currentAccount?.address, suiClient]);
 
-  return { vaultCapPairs, loading, error, refetch: fetchVaultsAndCaps };
+  return {
+    vaultCapPairs,
+    loading,
+    error,
+    refetch: fetchVaultsAndCaps,
+  };
 }

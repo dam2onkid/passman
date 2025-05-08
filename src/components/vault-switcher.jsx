@@ -30,12 +30,13 @@ import useVaults from "@/hooks/use-fetch-vaults";
 import { useSuiWallet } from "@/hooks/use-sui-wallet";
 import { Transaction } from "@mysten/sui/transactions";
 import { PACKAGE_ID } from "@/constants/config";
+import useVaultStore from "@/store/vault-store";
 
 export function VaultSwitcher() {
   const { isMobile } = useSidebar();
   const { signAndExecuteTransaction } = useSuiWallet();
   const [isAddVaultModalOpen, setIsAddVaultModalOpen] = React.useState(false);
-  const [activeVaultCapPair, setActiveVaultCapPair] = React.useState(null);
+  const { activeVaultCapPair, setActiveVaultCapPair } = useVaultStore();
   const { vaultCapPairs, loading, refetch } = useVaults();
 
   const handleCreateVault = (newVault) => {
@@ -63,7 +64,7 @@ export function VaultSwitcher() {
     if (!activeVaultCapPair) {
       setActiveVaultCapPair(vaultCapPairs[0]);
     }
-  }, [vaultCapPairs, activeVaultCapPair, loading]);
+  }, [vaultCapPairs, activeVaultCapPair, loading, setActiveVaultCapPair]);
 
   const filteredVaultCapPairs = vaultCapPairs
     .filter(({ vault }) => vault?.id !== activeVaultCapPair?.vault?.id)
