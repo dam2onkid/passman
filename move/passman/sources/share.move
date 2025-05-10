@@ -50,7 +50,7 @@ public entry fun share_item_entry(cap: &Cap, item: &Item, recipients: vector<add
     });
     transfer::share_object(share)
 }
-
+// [pkg-id][creater-address][nonce]
 fun check_policy(item: &Item, share: &Share, caller: address, c: &Clock): bool {
     if(share.item_id != object::id(item)) return false;
     if(!share.recipients.contains(&caller)) return false;

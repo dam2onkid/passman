@@ -13,6 +13,7 @@ public struct Item has key {
     name: String,
     category: String,
     vault_id: ID,
+    key_id: vector<u8>,
     data: vector<u8>,
 }
 
@@ -57,13 +58,14 @@ fun create_vault(name: String, ctx: &mut TxContext): (Vault, Cap) {
     (vault, cap)
 }
 
-fun create_item(cap: &Cap, name: String, category: String, vault: &Vault, data: vector<u8>, ctx: &mut TxContext): Item {
+fun create_item(cap: &Cap, name: String, category: String, vault: &Vault, key_id: vector<u8>, data: vector<u8>, ctx: &mut TxContext): Item {
     assert!(cap.vault_id == object::id(vault), ENotOwner);
     Item {
         id: object::new(ctx),
         name,
         category,
         vault_id: object::id(vault),
+        key_id,
         data,
     }
 }
@@ -93,12 +95,13 @@ entry fun create_vault_entry(name: String, ctx: &mut TxContext) {
     transfer::transfer(vault,  ctx.sender())
 }
 
-entry fun create_item_entry(cap: &Cap, name: String, category: String, vault: &Vault, data: vector<u8>, ctx: &mut TxContext) {
+entry fun create_item_entry(cap: &Cap, name: String, category: String, vault: &Vault, key_id: vector<u8>, data: vector<u8>, ctx: &mut TxContext) {
     let item = create_item(
         cap,
         name,
         category,
         vault,
+        key_id,
         data,
         ctx
         );
@@ -145,6 +148,7 @@ fun new_item_for_testing(): Item {
         utf8(b"item_1"),
         utf8(b"wallet"),
         &vault,
+        vector::empty(),
         vector::empty(),
         ctx
     );
