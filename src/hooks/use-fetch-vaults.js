@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useSuiWallet } from "./use-sui-wallet";
-import { PACKAGE_ID } from "@/constants/config";
 import useVaultStore from "@/store/vault-store";
+import { useNetworkVariable } from "@/lib/network-config";
 
 const INTERVAL = 3000;
 
 export default function useVaults() {
   const { currentAccount, client: suiClient, isConnected } = useSuiWallet();
+  const packageId = useNetworkVariable("passman");
   const [vaultCapPairs, setVaultCapPairs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -29,7 +30,7 @@ export default function useVaults() {
           showType: true,
         },
         filter: {
-          StructType: `${PACKAGE_ID}::vault::Vault`,
+          StructType: `${packageId}::vault::Vault`,
         },
       });
 
@@ -41,7 +42,7 @@ export default function useVaults() {
           showType: true,
         },
         filter: {
-          StructType: `${PACKAGE_ID}::vault::Cap`,
+          StructType: `${packageId}::vault::Cap`,
         },
       });
 

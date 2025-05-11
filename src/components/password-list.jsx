@@ -4,10 +4,14 @@ import { useState } from "react";
 import { Search } from "lucide-react";
 import { groupPasswordEntriesByCategory } from "@/lib/password-data";
 import { cn } from "@/lib/utils";
+import useActiveVault from "@/hooks/use-active-vault";
+import useFetchItems from "@/hooks/use-fetch-items";
 
 export function PasswordList({ onSelectEntry, selectedEntryId }) {
   const [searchQuery, setSearchQuery] = useState("");
   const groupedEntries = groupPasswordEntriesByCategory();
+  const { vaultId } = useActiveVault();
+  const { items } = useFetchItems(vaultId);
 
   // Filter entries based on search query
   const filteredGroupedEntries = {};
@@ -72,9 +76,6 @@ export function PasswordList({ onSelectEntry, selectedEntryId }) {
                     </div>
                     <div className="flex flex-col items-start text-sm">
                       <span className="font-medium">{entry.name}</span>
-                      <span className="text-muted-foreground">
-                        {entry.username}
-                      </span>
                     </div>
                   </button>
                 ))}

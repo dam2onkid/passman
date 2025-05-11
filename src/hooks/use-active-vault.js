@@ -1,9 +1,5 @@
 import useVaultStore from "@/store/vault-store";
 
-/**
- * Custom hook to access the active vault and capability data
- * @returns {Object} The active vault data and helper functions
- */
 export default function useActiveVault() {
   const { activeVaultCapPair, setActiveVaultCapPair, reset } = useVaultStore();
 

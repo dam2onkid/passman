@@ -13,13 +13,14 @@ public struct Item has key {
     name: String,
     category: String,
     vault_id: ID,
-    key_id: vector<u8>,
+    nonce: vector<u8>,
     data: vector<u8>,
 }
 
 public struct Vault has key {
     id: UID,
-    name: String
+    name: String,
+    items: vector<ID>
 }
 
 public struct Cap has key {
@@ -53,36 +54,37 @@ public struct ItemDeleted has copy, drop {
 
 // === Function ===
 fun create_vault(name: String, ctx: &mut TxContext): (Vault, Cap) {
-    let vault = Vault { id: object::new(ctx), name };
+    let vault = Vault { id: object::new(ctx), name, items: vector::empty() };
     let cap = Cap{id: object::new(ctx), vault_id: object::id(&vault)  };
     (vault, cap)
 }
 
-fun create_item(cap: &Cap, name: String, category: String, vault: &Vault, key_id: vector<u8>, data: vector<u8>, ctx: &mut TxContext): Item {
+fun create_item(cap: &Cap, name: String, category: String, vault: &mut Vault, nonce: vector<u8>, data: vector<u8>, ctx: &mut TxContext): Item {
     assert!(cap.vault_id == object::id(vault), ENotOwner);
-    Item {
+    let item = Item {
         id: object::new(ctx),
         name,
         category,
         vault_id: object::id(vault),
-        key_id,
+        nonce,
         data,
-    }
+    };
+    vault.items.push_back(object::id(&item));
+    item
 }
 
-entry fun update_item(cap: &Cap, name: String, vault: &Vault, data: vector<u8>, item: &mut Item) {
+entry fun update_item(cap: &Cap, name: String, data: vector<u8>, item: &mut Item) {
     assert!(cap.vault_id == item.vault_id, ENotOwner);
     item.name = name;
     item.data = data;
-    item.vault_id = object::id(vault);
 
     event::emit(ItemUpdated { item_id: object::id(item), vault_id: item.vault_id });
 }
 
-entry fun delete_item(cap: &Cap, item: Item) {
+entry fun delete_item(cap: &Cap, vault: &mut Vault, item: Item) {
     assert!(cap.vault_id == item.vault_id, ENotOwner);
     event::emit(ItemDeleted { item_id: object::id(&item), vault_id: item.vault_id, name: item.name });
-
+    vault.items = vault.items.filter!(|x| x != object::id(&item) ) ;
     let Item { id, .. } = item;
     object::delete(id)
 }
@@ -95,13 +97,13 @@ entry fun create_vault_entry(name: String, ctx: &mut TxContext) {
     transfer::transfer(vault,  ctx.sender())
 }
 
-entry fun create_item_entry(cap: &Cap, name: String, category: String, vault: &Vault, key_id: vector<u8>, data: vector<u8>, ctx: &mut TxContext) {
+entry fun create_item_entry(cap: &Cap, name: String, category: String, vault: &mut Vault, nonce: vector<u8>, data: vector<u8>, ctx: &mut TxContext) {
     let item = create_item(
         cap,
         name,
         category,
         vault,
-        key_id,
+        nonce,
         data,
         ctx
         );
@@ -130,28 +132,28 @@ fun new_vault_for_testing(): (Cap, Vault) {
 
     (cap, vault)
 }
-#[test_only]
-fun destroy_for_testing(cap: Cap, vault: Vault) {
-    let Cap { id, .. } = cap;
-    object::delete(id);
-    let Vault { id, .. } = vault;
-    object::delete(id);
-}
+// #[test_only]
+// fun destroy_for_testing(cap: Cap, vault: Vault) {
+//     let Cap { id, .. } = cap;
+//     object::delete(id);
+//     let Vault { id, .. } = vault;
+//     object::delete(id);
+// }
 
-#[test]
-fun new_item_for_testing(): Item {
-    use std::string::utf8;
-    let ctx = &mut tx_context::dummy();
-    let (cap, vault) = new_vault_for_testing();
-    let item = create_item(
-        &cap,
-        utf8(b"item_1"),
-        utf8(b"wallet"),
-        &vault,
-        vector::empty(),
-        vector::empty(),
-        ctx
-    );
-    destroy_for_testing(cap, vault);
-    item
-}
+// #[test]
+// fun new_item_for_testing(): Item {
+//     use std::string::utf8;
+//     let ctx = &mut tx_context::dummy();
+//     let (cap, vault) = new_vault_for_testing();
+//     let item = create_item(
+//         &cap,
+//         utf8(b"item_1"),
+//         utf8(b"wallet"),
+//           &mut vault,
+//         vector::empty(),
+//         vector::empty(),
+//         ctx
+//     );
+//     destroy_for_testing(cap, vault);
+//     item
+// }

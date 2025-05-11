@@ -8,6 +8,7 @@ export function PasswordManager() {
   const [selectedEntry, setSelectedEntry] = useState(null);
 
   const handleSelectEntry = (entry) => {
+    console.log({ entry });
     setSelectedEntry(entry);
   };
 

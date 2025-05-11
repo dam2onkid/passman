@@ -8,7 +8,6 @@ import {
   useSignAndExecuteTransaction,
 } from "@mysten/dapp-kit";
 import { useCallback } from "react";
-import "@mysten/dapp-kit/dist/index.css";
 
 export function useSuiWallet() {
   const client = useSuiClient();

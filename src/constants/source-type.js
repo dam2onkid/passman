@@ -35,7 +35,7 @@ const ITEM_TYPE_DATA = {
       {
         name: "website",
         label: "Website",
-        type: "url",
+        type: "text",
       },
       {
         name: "firstName",
