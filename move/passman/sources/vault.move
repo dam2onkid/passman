@@ -2,6 +2,7 @@ module passman::vault;
 
 use std::string::String;
 use sui::event;
+use passman::utils::{ is_prefix };
 
 // === Error ===
 const ENotOwner: u64 = 1;
@@ -111,15 +112,16 @@ entry fun create_item_entry(cap: &Cap, name: String, category: String, vault: &m
     transfer::share_object(item)
 }
 
-fun check_policy(cap: &Cap, item: &Item): bool {
-    if(cap.vault_id == item.vault_id ) {
-        return false
-    };
-    true
+fun check_policy(id: vector<u8>, vault: &Vault, item: &Item): bool {
+    if(object::id(vault) != item.vault_id) return false;
+    let mut namespace = object::id(vault).to_bytes();
+    namespace.append(item.nonce);
+    is_prefix(namespace, id)
 }
 
-entry fun seal_approve(cap: &Cap, item: &Item) {
-    assert!(check_policy(cap, item), ENoAccess)
+// [pkg-id][vault-id][nonce]
+entry fun seal_approve(id: vector<u8>, vault: &Vault, item: &Item) {
+    assert!(check_policy(id, vault, item), ENoAccess)
 }
 
 // === Test ===
@@ -132,28 +134,36 @@ fun new_vault_for_testing(): (Cap, Vault) {
 
     (cap, vault)
 }
-// #[test_only]
-// fun destroy_for_testing(cap: Cap, vault: Vault) {
-//     let Cap { id, .. } = cap;
-//     object::delete(id);
-//     let Vault { id, .. } = vault;
-//     object::delete(id);
-// }
 
-// #[test]
-// fun new_item_for_testing(): Item {
-//     use std::string::utf8;
-//     let ctx = &mut tx_context::dummy();
-//     let (cap, vault) = new_vault_for_testing();
-//     let item = create_item(
-//         &cap,
-//         utf8(b"item_1"),
-//         utf8(b"wallet"),
-//           &mut vault,
-//         vector::empty(),
-//         vector::empty(),
-//         ctx
-//     );
-//     destroy_for_testing(cap, vault);
-//     item
-// }
+#[test_only]
+fun destroy_for_testing(cap: Cap, vault: Vault) {
+    let Cap { id, .. } = cap;
+    object::delete(id);
+    let Vault { id, .. } = vault;
+    object::delete(id);
+}
+
+#[test]
+fun new_item_for_testing(): Item {
+    use std::string::utf8;
+    use std::debug::print;
+    let ctx = &mut tx_context::dummy();
+    let (cap, vault) = new_vault_for_testing();
+    let mut _vault = vault;
+    let item = create_item(
+        &cap,
+        utf8(b"item_1"),
+        utf8(b"wallet"),
+        &mut _vault,
+        vector::empty(),
+        vector::empty(),
+        ctx
+    );
+    let mut id = vector::empty();
+    id.append(object::id(&_vault).to_bytes());
+    let result = check_policy(id, &_vault, &item);
+    print(&result);
+
+    destroy_for_testing(cap, _vault);
+    item
+}
