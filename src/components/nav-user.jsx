@@ -21,11 +21,21 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { WalletConnectButton } from "@/components/wallet-connect-button";
+import useKeySessionStore from "@/store/key-session-store";
+import useActiveVault from "@/hooks/use-active-vault";
 
 export function NavUser({ user }) {
   const { isMobile } = useSidebar();
   const { isConnected, walletAddress, disconnect } = useSuiWallet();
+  const { reset: resetSessionKey } = useKeySessionStore();
+  const { resetVault } = useActiveVault();
   const { data: walletNSName } = useResolveSuiNSName(walletAddress);
+
+  const handleDisconnect = () => {
+    disconnect();
+    resetSessionKey();
+    resetVault();
+  };
 
   if (!isConnected) return <WalletConnectButton />;
 
@@ -86,7 +96,7 @@ export function NavUser({ user }) {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator /> */}
-            <DropdownMenuItem onClick={disconnect}>
+            <DropdownMenuItem onClick={handleDisconnect}>
               <LogOut />
               Disconnect
             </DropdownMenuItem>

@@ -1,9 +1,19 @@
-import { useState, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { SealClient, getAllowlistedKeyServers, SessionKey } from "@mysten/seal";
-import { fromHex } from "@mysten/sui/utils";
+import { Transaction } from "@mysten/sui/transactions";
+import { fromHex, toHex } from "@mysten/sui/utils";
+import { useSignPersonalMessage } from "@mysten/dapp-kit";
 
 import { useSuiWallet } from "./use-sui-wallet";
 import { DEFAULT_NETWORK } from "@/lib/network-config";
+import useKeySessionStore from "@/store/key-session-store";
+
+export const getSealId = (vaultId, nonce) => {
+  nonce = nonce || crypto.getRandomValues(new Uint8Array(5));
+  const policyObjectBytes = fromHex(vaultId);
+  const id = toHex(new Uint8Array([...policyObjectBytes, ...nonce]));
+  return { id, nonce };
+};
 
 export const useSealEncrypt = ({ verifyKeyServers = false } = {}) => {
   const [loading, setLoading] = useState(false);
@@ -21,14 +31,6 @@ export const useSealEncrypt = ({ verifyKeyServers = false } = {}) => {
         verifyKeyServers,
       });
 
-      console.log("encryptData", {
-        threshold,
-        packageId,
-        id,
-        data,
-        url: getAllowlistedKeyServers(DEFAULT_NETWORK),
-      });
-
       const { encryptedObject, key } = await client.encrypt({
         threshold,
         packageId,
@@ -39,7 +41,6 @@ export const useSealEncrypt = ({ verifyKeyServers = false } = {}) => {
       return { encryptedObject, key };
     } catch (err) {
       setError(err.message || "Failed to encrypt data");
-      throw err;
     } finally {
       setLoading(false);
     }
@@ -54,92 +55,100 @@ export const useSealEncrypt = ({ verifyKeyServers = false } = {}) => {
 
 export const useSealDecrypt = ({ verifyKeyServers = false } = {}) => {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const { client: suiClient } = useSuiWallet();
 
-  const decryptData = useCallback(
-    async ({ encryptedObject, packageId, id }) => {
-      setLoading(true);
-      setError(null);
+  const decryptData = async ({ encryptedObject, sessionKey, txBytes }) => {
+    setLoading(true);
 
-      try {
-        const client = new SealClient({
-          suiClient,
-          serverObjectIds: getAllowlistedKeyServers(DEFAULT_NETWORK),
-          verifyKeyServers,
-        });
+    console.log("decryptData-sessionKey", {
+      sessionKey,
+      keyServers: getAllowlistedKeyServers("testnet"),
+    });
+    if (!sessionKey || sessionKey?.isExpired()) {
+      return { error: "Session key expired" };
+    }
+    try {
+      const client = new SealClient({
+        suiClient,
+        serverObjectIds: getAllowlistedKeyServers("testnet"),
+        verifyKeyServers: false,
+      });
 
-        const decrypted = await client.decrypt({
-          encryptedObject,
-          packageId: fromHex(packageId),
-          id: fromHex(id),
-        });
+      const decrypted = await client.decrypt({
+        data: encryptedObject,
+        sessionKey,
+        txBytes,
+      });
 
-        return decrypted;
-      } catch (err) {
-        setError(err.message || "Failed to decrypt data");
-        throw err;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [suiClient, verifyKeyServers]
-  );
+      return { data: decrypted };
+    } catch (err) {
+      return { error: err.message || "Failed to decrypt data" };
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return {
     decryptData,
     loading,
-    error,
   };
 };
 
-export const useSessionKey = () => {
+export const useSessionKey = ({
+  packageId,
+  ttlMin = 10,
+  walletAddress,
+} = {}) => {
+  const { mutate: signPersonalMessage } = useSignPersonalMessage();
+  const { sessionKey, setSessionKey } = useKeySessionStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const { currentAccount, client: suiClient } = useSuiWallet();
-  const packageId = useNetworkVariable("passman");
 
-  const createSessionKey = useCallback(
-    async ({ ttlMin = 10 } = {}) => {
-      if (!currentAccount?.address) {
-        const err = new Error("Wallet not connected");
-        setError(err.message);
-        throw err;
-      }
+  const fetchSessionKey = async () => {
+    if (!walletAddress) return;
+    setLoading(true);
+    setError(null);
+    if (
+      sessionKey &&
+      !sessionKey?.isExpired() &&
+      sessionKey?.getAddress() === walletAddress
+    ) {
+      setLoading(false);
+      return;
+    }
 
-      setLoading(true);
-      setError(null);
+    setSessionKey(null);
+    try {
+      console.log("fetchSessionKey", walletAddress);
+      const _sessionKey = new SessionKey({
+        address: walletAddress,
+        packageId,
+        ttlMin,
+      });
 
-      try {
-        const sessionKey = new SessionKey({
-          address: currentAccount.address,
-          packageId: fromHex(packageId),
-          ttlMin: ttlMin,
-        });
-
-        const message = sessionKey.getPersonalMessage();
-
-        // User confirms in wallet
-        const { signature } = await currentAccount.signPersonalMessage({
-          message,
-        });
-
-        // Initialization complete
-        sessionKey.setPersonalMessageSignature(signature);
-
-        return sessionKey;
-      } catch (err) {
-        setError(err.message || "Failed to create session key");
-        throw err;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [currentAccount, packageId]
-  );
+      // User confirms in wallet
+      signPersonalMessage(
+        { message: _sessionKey.getPersonalMessage() },
+        {
+          onSuccess: async ({ signature }) => {
+            await _sessionKey.setPersonalMessageSignature(signature);
+            setSessionKey(_sessionKey);
+          },
+        }
+      );
+    } catch (err) {
+      setError(err.message || "Failed to create session key");
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    fetchSessionKey();
+  }, []);
 
   return {
-    createSessionKey,
+    refetch: fetchSessionKey,
+    sessionKey,
     loading,
     error,
   };

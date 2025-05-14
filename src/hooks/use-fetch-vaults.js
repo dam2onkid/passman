@@ -27,7 +27,6 @@ export default function useVaults() {
         owner: currentAccount.address,
         options: {
           showContent: true,
-          showType: true,
         },
         filter: {
           StructType: `${packageId}::vault::Vault`,
@@ -39,7 +38,6 @@ export default function useVaults() {
         owner: currentAccount.address,
         options: {
           showContent: true,
-          showType: true,
         },
         filter: {
           StructType: `${packageId}::vault::Cap`,

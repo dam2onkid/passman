@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Lock, FileText, CreditCard, Search } from "lucide-react";
 import { get } from "lodash-es";
 
@@ -41,10 +41,12 @@ const getItemIcon = (category) => {
 
 export function PasswordList({ onSelectEntry, selectedEntryId }) {
   const [searchQuery, setSearchQuery] = useState("");
-  // const groupedEntries = groupPasswordEntriesByCategory();
   const { vaultId } = useActiveVault();
-  const { items, loading } = useFetchItems(vaultId);
+  const { items, loading, refetch } = useFetchItems(vaultId);
 
+  useEffect(() => {
+    refetch();
+  }, [vaultId]);
   // Filter entries based on search query
   const filteredGroupedItems = {};
   const groupedItems = groupItemsByFirstLetter(items);
@@ -63,8 +65,6 @@ export function PasswordList({ onSelectEntry, selectedEntryId }) {
       }
     });
   }
-
-  console.log({ filteredGroupedItems, items });
 
   return (
     <div className="flex h-full flex-col border-r">
@@ -121,7 +121,7 @@ export function PasswordList({ onSelectEntry, selectedEntryId }) {
                   <div>
                     {get(filteredGroupedItems, firstLetter, []).map((item) => (
                       <button
-                        key={item.id}
+                        key={item.id.id}
                         className={cn(
                           "flex w-full items-center gap-3 px-4 py-2 hover:bg-muted/50",
                           selectedEntryId === item.id && "bg-muted"

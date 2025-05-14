@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { ChevronsUpDown, Plus, Vault } from "lucide-react";
+import { toast } from "sonner";
 
 import {
   DropdownMenu,
@@ -28,9 +29,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import useVaults from "@/hooks/use-fetch-vaults";
 import { useSuiWallet } from "@/hooks/use-sui-wallet";
-import { Transaction } from "@mysten/sui/transactions";
-import { PACKAGE_ID } from "@/constants/config";
 import useVaultStore from "@/store/vault-store";
+import { createVaultMoveCallTx } from "@/lib/construct-move-call";
 
 export function VaultSwitcher() {
   const { isMobile } = useSidebar();
@@ -40,20 +40,18 @@ export function VaultSwitcher() {
   const { vaultCapPairs, loading, refetch } = useVaults();
 
   const handleCreateVault = (newVault) => {
-    const tx = new Transaction();
-    tx.moveCall({
-      target: `${PACKAGE_ID}::vault::create_vault_entry`,
-      arguments: [tx.pure.string(newVault.name)],
-    });
-    tx.setGasBudget(10000000);
+    const tx = createVaultMoveCallTx({ name: newVault.name });
+
     signAndExecuteTransaction(
-      {
-        transaction: tx,
-      },
+      { transaction: tx },
       {
         onSuccess: async (result) => {
           setIsAddVaultModalOpen(false);
           refetch();
+          toast.success("Vault created successfully");
+        },
+        onError: (error) => {
+          toast.error("Failed to create vault");
         },
       }
     );
