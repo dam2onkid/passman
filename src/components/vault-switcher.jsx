@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronsUpDown, Plus, Vault } from "lucide-react";
+import { ChevronsUpDown, Plus, Vault, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -34,24 +34,37 @@ import { createVaultMoveCallTx } from "@/lib/construct-move-call";
 
 export function VaultSwitcher() {
   const { isMobile } = useSidebar();
-  const { signAndExecuteTransaction } = useSuiWallet();
+  const { signAndExecuteTransaction, client } = useSuiWallet();
   const [isAddVaultModalOpen, setIsAddVaultModalOpen] = React.useState(false);
+  const [isCreatingVault, setIsCreatingVault] = React.useState(false);
   const { activeVaultCapPair, setActiveVaultCapPair } = useVaultStore();
   const { vaultCapPairs, loading, refetch } = useVaults();
 
   const handleCreateVault = (newVault) => {
+    setIsCreatingVault(true);
     const tx = createVaultMoveCallTx({ name: newVault.name });
 
     signAndExecuteTransaction(
       { transaction: tx },
       {
         onSuccess: async (result) => {
-          setIsAddVaultModalOpen(false);
-          refetch();
-          toast.success("Vault created successfully");
+          try {
+            await client.waitForTransaction({
+              digest: result.digest,
+              options: { showEffects: true },
+            });
+            await refetch();
+            setIsAddVaultModalOpen(false);
+            toast.success("Vault created successfully");
+          } catch (error) {
+            toast.error("Failed to create vault");
+          } finally {
+            setIsCreatingVault(false);
+          }
         },
         onError: (error) => {
           toast.error("Failed to create vault");
+          setIsCreatingVault(false);
         },
       }
     );
@@ -165,14 +178,15 @@ export function VaultSwitcher() {
 
       <AddVaultModal
         isOpen={isAddVaultModalOpen}
-        onClose={() => setIsAddVaultModalOpen(false)}
+        onClose={() => !isCreatingVault && setIsAddVaultModalOpen(false)}
         onCreateVault={handleCreateVault}
+        isCreating={isCreatingVault}
       />
     </>
   );
 }
 
-function AddVaultModal({ isOpen, onClose, onCreateVault }) {
+function AddVaultModal({ isOpen, onClose, onCreateVault, isCreating }) {
   const [vaultName, setVaultName] = React.useState("");
 
   const handleSubmit = (e) => {
@@ -182,7 +196,6 @@ function AddVaultModal({ isOpen, onClose, onCreateVault }) {
         name: vaultName.trim(),
         logo: Vault,
       });
-      setVaultName("");
     }
   };
 
@@ -201,12 +214,24 @@ function AddVaultModal({ isOpen, onClose, onCreateVault }) {
                 value={vaultName}
                 onChange={(e) => setVaultName(e.target.value)}
                 autoFocus
+                disabled={isCreating}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={!vaultName.trim()}>
-              Create
+            <Button
+              type="submit"
+              disabled={!vaultName.trim() || isCreating}
+              className="min-w-[80px]"
+            >
+              {isCreating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create"
+              )}
             </Button>
           </DialogFooter>
         </form>

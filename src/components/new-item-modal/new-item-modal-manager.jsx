@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { toast } from "sonner";
 
 import { useNewItemModal } from "@/hooks/use-new-item-modal";
@@ -12,44 +13,60 @@ import { useNetworkVariable } from "@/lib/network-config";
 import useActiveVault from "@/hooks/use-active-vault";
 import { createItemMoveCallTx } from "@/lib/construct-move-call";
 
-export function NewItemModalManager() {
+export function NewItemModalManager({ onNewItemCreated }) {
+  const [isCreatingItem, setIsCreatingItem] = React.useState(false);
   const { modalState, closeModal, openItemForm, openModal } = useNewItemModal();
-  const { signAndExecuteTransaction, walletAddress } = useSuiWallet();
+  const { signAndExecuteTransaction, client } = useSuiWallet();
   const packageId = useNetworkVariable("passman");
   const { vaultId, capId } = useActiveVault();
   const { encryptData } = useSealEncrypt();
 
   const handleSaveItem = async (itemType, data) => {
-    const name = data.itemName || `New ${itemType}`;
-    const { id, nonce } = getSealId(vaultId);
+    try {
+      setIsCreatingItem(true);
+      const name = data.itemName || `New ${itemType}`;
+      const { id, nonce } = getSealId(vaultId);
 
-    const { encryptedObject } = await encryptData({
-      packageId,
-      id,
-      data: new Uint8Array(data),
-    });
+      const { encryptedObject } = await encryptData({
+        packageId,
+        id,
+        data: new Uint8Array(data),
+      });
 
-    const tx = createItemMoveCallTx({
-      vaultId,
-      capId,
-      name,
-      itemType,
-      nonce,
-      encryptedObject,
-    });
+      const tx = createItemMoveCallTx({
+        vaultId,
+        capId,
+        name,
+        itemType,
+        nonce,
+        encryptedObject,
+      });
 
-    signAndExecuteTransaction(
-      { transaction: tx },
-      {
-        onSuccess: async (result) => {
-          toast.success("Item created successfully");
-          closeModal();
-        },
-        onError: (error) => {
-          toast.error("Failed to create item");
-        },
-      }
-    );
+      signAndExecuteTransaction(
+        { transaction: tx },
+        {
+          onSuccess: async (result) => {
+            console.log("result", result);
+            await client.waitForTransaction({
+              digest: result.digest,
+              options: { showEffects: true },
+            });
+            toast.success("Item created successfully");
+            closeModal();
+            onNewItemCreated(itemType, data);
+          },
+          onError: (error) => {
+            toast.error("Failed to create item");
+          },
+          onFinally: () => {
+            setIsCreatingItem(false);
+          },
+        }
+      );
+    } catch (error) {
+      toast.error("Failed to create item");
+      setIsCreatingItem(false);
+    }
   };
 
   const handleBackToItemSelector = () => {
@@ -71,6 +88,7 @@ export function NewItemModalManager() {
         <ItemFormModal
           isOpen={true}
           onClose={closeModal}
+          isCreating={isCreatingItem}
           itemType={modalState}
           onSubmit={handleSaveItem}
           onBack={handleBackToItemSelector}

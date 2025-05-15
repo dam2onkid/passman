@@ -11,9 +11,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ITEM_TYPE_DATA } from "@/constants/source-type";
-import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Loader2 } from "lucide-react";
 
-export function ItemFormModal({ isOpen, onClose, itemType, onSubmit, onBack }) {
+export function ItemFormModal({
+  isOpen,
+  onClose,
+  isCreating,
+  itemType,
+  onSubmit,
+  onBack,
+}) {
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState({});
@@ -195,8 +202,15 @@ export function ItemFormModal({ isOpen, onClose, itemType, onSubmit, onBack }) {
             ))}
 
             <DialogFooter>
-              <Button type="submit" className="w-full">
-                Save
+              <Button type="submit" className="w-full" disabled={isCreating}>
+                {isCreating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  "Create"
+                )}
               </Button>
             </DialogFooter>
           </form>

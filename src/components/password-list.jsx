@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import useActiveVault from "@/hooks/use-active-vault";
 import useFetchItems from "@/hooks/use-fetch-items";
 import { ITEM_TYPE } from "@/constants/source-type";
+import { NewItemModalManager } from "@/components/new-item-modal/new-item-modal-manager";
 
 export const groupItemsByFirstLetter = (items) => {
   const grouped = {};
@@ -66,8 +67,13 @@ export function PasswordList({ onSelectEntry, selectedEntryId }) {
     });
   }
 
+  const handleNewItemCreated = (itemType, data) => {
+    refetch();
+  };
+
   return (
     <div className="flex h-full flex-col border-r">
+      <NewItemModalManager onNewItemCreated={handleNewItemCreated} />
       {/* Search header */}
       <div className="flex items-center gap-2 border-b p-4">
         <div className="relative flex-1">
