@@ -84,7 +84,7 @@ const ITEM_TYPE_DATA = {
       {
         name: "recoveryPhrase",
         label: "Recovery Phrase",
-        type: "password",
+        type: "text",
       },
       {
         name: "password",

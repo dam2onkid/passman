@@ -33,6 +33,17 @@ export function createItemMoveCallTx(args = {}, gasBudget = GAS_BUDGET) {
   return tx;
 }
 
+export function deleteItemMoveCallTx(args = {}, gasBudget = GAS_BUDGET) {
+  const { vaultId, capId, itemId } = args;
+  const tx = new Transaction();
+  tx.moveCall({
+    target: `${PACKAGE_ID}::vault::delete_item`,
+    arguments: [tx.object(capId), tx.object(vaultId), tx.object(itemId)],
+  });
+  tx.setGasBudget(gasBudget);
+  return tx;
+}
+
 // Seal
 export function ownerSealApproveMoveCallTx(args = {}) {
   const { vaultId, itemId, id } = args;

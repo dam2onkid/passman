@@ -11,6 +11,11 @@ export function PasswordManager() {
     setSelectedEntry(entry);
   };
 
+  const handleItemDeleted = (itemId) => {
+    // Clear the selected entry when deleted
+    setSelectedEntry(null);
+  };
+
   return (
     <div className="grid h-full grid-cols-[350px_1fr]">
       <PasswordList
@@ -18,7 +23,10 @@ export function PasswordManager() {
         selectedEntryId={selectedEntry?.id}
       />
       {selectedEntry ? (
-        <PasswordDetail entry={selectedEntry} />
+        <PasswordDetail
+          entry={selectedEntry}
+          onItemDeleted={handleItemDeleted}
+        />
       ) : (
         <div className="flex h-full items-center justify-center p-8 text-center">
           <div className="max-w-xs space-y-1">
