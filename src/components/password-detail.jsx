@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Eye, EyeOff, MoreHorizontal, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,81 +11,64 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useSealDecrypt, useSessionKey, getSealId } from "@/hooks/use-seal";
+import { useSealDecrypt, getSealId } from "@/hooks/use-seal";
 import { useNetworkVariable } from "@/lib/network-config";
 import { useSuiWallet } from "@/hooks/use-sui-wallet";
 import useActiveVault from "@/hooks/use-active-vault";
 import { ownerSealApproveMoveCallTx } from "@/lib/construct-move-call";
 
 export function PasswordDetail({ entry }) {
+  const isFetchingRef = useRef(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { decryptData } = useSealDecrypt();
+  const [decryptedPassword, setDecryptedPassword] = useState(null);
+
   const { vaultId } = useActiveVault();
-  const {
-    client: suiClient,
-    walletAddress,
-    isConnected: isWalletConnected,
-  } = useSuiWallet();
   const packageId = useNetworkVariable("passman");
-  const {
-    sessionKey,
-    loading: sessionKeyLoading,
-    error: sessionKeyError,
-    refetch: refetchSessionKey,
-  } = useSessionKey({
-    packageId,
-    walletAddress,
-  });
+  const { client: suiClient, isConnected: isWalletConnected } = useSuiWallet();
+  const { decryptData } = useSealDecrypt({ packageId });
+
+  const handleTogglePassword = () => setShowPassword((prev) => !prev);
 
   const decryptItem = async () => {
-    const { id } = getSealId(vaultId, entry.nonce);
-    const txBytes = await ownerSealApproveMoveCallTx({
-      id,
+    console.log("🚀 ~ decryptItem ~ entry:", {
+      entry,
       vaultId,
-      itemId: entry.id.id,
-    }).build({ client: suiClient, onlyTransactionKind: true });
-
-    const { password, error } = await decryptData({
-      encryptedObject: new Uint8Array(entry.data),
-      sessionKey,
-      txBytes,
+      isFetching: isFetchingRef.current,
     });
+    if (!entry || !vaultId || isFetchingRef.current) return;
+    isFetchingRef.current = true;
 
-    if (error) toast.error(error);
+    try {
+      const { id } = getSealId(vaultId, entry.nonce);
+      const txBytes = await ownerSealApproveMoveCallTx({
+        id,
+        vaultId,
+        itemId: entry?.id?.id,
+      }).build({ client: suiClient, onlyTransactionKind: true });
 
-    console.log("password-detail-decryptedData", {
-      password,
-      error,
-    });
+      const decrypted = await decryptData({
+        encryptedObject: new Uint8Array(entry.data),
+        txBytes,
+      });
+      console.log("🚀 ~ decryptItem ~ decrypted:", decrypted);
+      setDecryptedPassword(decrypted);
+    } catch (err) {
+      toast.error(`Unexpected error: ${err?.message || "Unknown error"}`);
+    } finally {
+      isFetchingRef.current = false;
+    }
   };
 
   useEffect(() => {
-    if (!entry || !isWalletConnected || sessionKeyLoading) {
-      return;
-    }
-    if (!sessionKey && !sessionKeyLoading) {
-      refetchSessionKey();
-      return;
-    }
-    if (sessionKeyError) {
-      toast.error(sessionKeyError);
+    console.log("🚀 ~ useEffect ~ entry:", {
+      entry,
+      isWalletConnected,
+    });
+    if (!entry?.id?.id || !isWalletConnected) {
       return;
     }
     decryptItem();
-  }, [entry, isWalletConnected, sessionKeyLoading, sessionKeyError]);
-
-  if (!entry) {
-    return (
-      <div className="flex h-full items-center justify-center p-8 text-center">
-        <div className="max-w-xs space-y-1">
-          <p className="text-sm font-medium">No password selected</p>
-          <p className="text-sm text-muted-foreground">
-            Select a password from the list to view its details.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  }, [entry]);
 
   // return (
   //   <div className="flex h-full flex-col">

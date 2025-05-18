@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@mysten/dapp-kit": "^0.16.0",
-    "@mysten/seal": "^0.4.2",
+    "@mysten/seal": "^0.4.3",
     "@mysten/sui": "^1.28.2",
     "@radix-ui/react-avatar": "^1.1.6",
     "@radix-ui/react-collapsible": "^1.1.7",

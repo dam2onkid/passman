@@ -1,3 +1,4 @@
+import { fromHex } from "@mysten/sui/utils";
 import { Transaction } from "@mysten/sui/transactions";
 import { PACKAGE_ID } from "@/constants/config";
 const GAS_BUDGET = 10000000;
@@ -39,7 +40,7 @@ export function ownerSealApproveMoveCallTx(args = {}) {
   tx.moveCall({
     target: `${PACKAGE_ID}::vault::seal_approve`,
     arguments: [
-      tx.pure.vector("u8", Array.from(id)),
+      tx.pure.vector("u8", fromHex(id)),
       tx.object(vaultId),
       tx.object(itemId),
     ],

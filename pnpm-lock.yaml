@@ -12,8 +12,8 @@ importers:
         specifier: ^0.16.0
         version: 0.16.0(@tanstack/react-query@5.74.4(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(typescript@5.8.3)
       '@mysten/seal':
-        specifier: ^0.4.2
-        version: 0.4.2(typescript@5.8.3)
+        specifier: ^0.4.3
+        version: 0.4.3(typescript@5.8.3)
       '@mysten/sui':
         specifier: ^1.28.2
         version: 1.28.2(typescript@5.8.3)
@@ -356,8 +356,8 @@ packages:
       '@tanstack/react-query': ^5.0.0
       react: '*'
 
-  '@mysten/seal@0.4.2':
-    resolution: {integrity: sha512-KmNNN94wosVe1EnZnfv3BPe34qxdqXcHMHqecU1cRz2BkP5SgRrC+SIxzmwmvuhXU8qZkuV2lsFOQBpdAFTgJQ==}
+  '@mysten/seal@0.4.3':
+    resolution: {integrity: sha512-BKnttQFCzEt44Z/Lox5HROhmpTB5AamWf9+QHGow710ogt93AxdNkJ+OjNKQva6kizPQj0doex+rBaPvM/UnWA==}
 
   '@mysten/slush-wallet@0.1.0':
     resolution: {integrity: sha512-jYlzJM27TeBmbF0vHOYb3S95VnQ5Ya+MUyJzay85w674qzR52GpdERWZw0bg5j+O1pMYCGBCGsMucmetIs/iWw==}
@@ -2728,7 +2728,7 @@ snapshots:
       - react-dom
       - typescript
 
-  '@mysten/seal@0.4.2(typescript@5.8.3)':
+  '@mysten/seal@0.4.3(typescript@5.8.3)':
     dependencies:
       '@mysten/bcs': 1.6.1
       '@mysten/sui': 1.29.1(typescript@5.8.3)

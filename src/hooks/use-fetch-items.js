@@ -2,9 +2,6 @@ import { useState, useEffect } from "react";
 import { get } from "lodash-es";
 
 import { useSuiWallet } from "./use-sui-wallet";
-import { useNetworkVariable } from "@/lib/network-config";
-
-const INTERVAL = 3000;
 
 export default function useFetchItems(vaultId) {
   const { currentAccount, client: suiClient } = useSuiWallet();
@@ -32,7 +29,6 @@ export default function useFetchItems(vaultId) {
             options: { showContent: true },
           });
           const fields = item?.data?.content?.fields;
-          console.log("fields", { fields });
           return fields;
         }
       );
