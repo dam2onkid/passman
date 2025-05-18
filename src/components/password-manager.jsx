@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { PasswordList } from "@/components/password-list";
 import { PasswordDetail } from "@/components/password-detail";
+import { useSuiWallet } from "@/hooks/use-sui-wallet";
 
 export function PasswordManager() {
   const [selectedEntry, setSelectedEntry] = useState(null);
+  const { isConnected } = useSuiWallet();
 
   const handleSelectEntry = (entry) => {
     setSelectedEntry(entry);
@@ -16,6 +18,17 @@ export function PasswordManager() {
     setSelectedEntry(null);
   };
 
+  if (!isConnected) {
+    return (
+      <div className="flex h-full items-center justify-center p-8 text-center">
+        <div className="max-w-xs space-y-1">
+          <p className="text-sm font-medium">
+            Please connect your wallet to continue
+          </p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="grid h-full grid-cols-[350px_1fr]">
       <PasswordList

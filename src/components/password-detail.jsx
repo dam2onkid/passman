@@ -38,7 +38,7 @@ import {
   ownerSealApproveMoveCallTx,
   deleteItemMoveCallTx,
 } from "@/lib/construct-move-call";
-import { ITEM_TYPE_DATA } from "@/constants/source-type";
+import { ITEM_TYPE_DATA, getItemIcon } from "@/constants/source-type";
 
 export function PasswordDetail({ entry, onItemDeleted }) {
   const isFetchingRef = useRef(false);
@@ -366,7 +366,7 @@ export function PasswordDetail({ entry, onItemDeleted }) {
           {/* Service icon and name */}
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/50">
-              {entry.icon && <entry.icon className="h-6 w-6" />}
+              {getItemIcon(entry.category)}
             </div>
             <div className="text-xl font-semibold">
               {decryptedPassword?.itemName || entry.name}

@@ -3,9 +3,15 @@
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNewItemModal } from "@/hooks/use-new-item-modal";
+import { useSuiWallet } from "@/hooks/use-sui-wallet";
 
 export function HeaderNewItemButton() {
   const { openModal } = useNewItemModal();
+  const { isConnected } = useSuiWallet();
+
+  if (!isConnected) {
+    return null;
+  }
 
   return (
     <Button

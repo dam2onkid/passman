@@ -105,4 +105,13 @@ const ITEM_TYPE_DATA = {
   },
 };
 
-export { ITEM_TYPE, ITEM_TYPE_DATA };
+const getItemIcon = (category) => {
+  const icon = {
+    [ITEM_TYPE.LOGIN]: <Lock className="h-4 w-4" />,
+    [ITEM_TYPE.SECURE_NOTE]: <FileText className="h-4 w-4" />,
+    [ITEM_TYPE.CRYPTO_WALLET]: <CreditCard className="h-4 w-4" />,
+  };
+  return icon[category] || <Lock className="h-4 w-4" />;
+};
+
+export { ITEM_TYPE, ITEM_TYPE_DATA, getItemIcon };

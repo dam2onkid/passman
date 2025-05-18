@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Lock, FileText, CreditCard, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { get } from "lodash-es";
 
 import { cn } from "@/lib/utils";
 import useActiveVault from "@/hooks/use-active-vault";
 import useFetchItems from "@/hooks/use-fetch-items";
-import { ITEM_TYPE } from "@/constants/source-type";
+import { getItemIcon } from "@/constants/source-type";
 import { NewItemModalManager } from "@/components/new-item-modal/new-item-modal-manager";
 
 export const groupItemsByFirstLetter = (items) => {
@@ -29,15 +29,6 @@ export const getAllCategories = (items) => {
   return [
     ...new Set(items.map((item) => item.name.charAt(0).toUpperCase())),
   ].sort();
-};
-
-const getItemIcon = (category) => {
-  const icon = {
-    [ITEM_TYPE.LOGIN]: <Lock className="h-4 w-4" />,
-    [ITEM_TYPE.SECURE_NOTE]: <FileText className="h-4 w-4" />,
-    [ITEM_TYPE.CRYPTO_WALLET]: <CreditCard className="h-4 w-4" />,
-  };
-  return icon[category] || <Lock className="h-4 w-4" />;
 };
 
 export function PasswordList({ onSelectEntry, selectedEntryId }) {

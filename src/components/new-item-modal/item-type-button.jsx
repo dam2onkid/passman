@@ -1,5 +1,3 @@
-// "use client";
-
 import { cn } from "@/lib/utils";
 
 export function ItemTypeButton({ icon: Icon, label, onClick, className }) {
