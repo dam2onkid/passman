@@ -26,11 +26,12 @@ export function NewItemModalManager({ onNewItemCreated }) {
       setIsCreatingItem(true);
       const name = data.itemName || `New ${itemType}`;
       const { id, nonce } = getSealId(vaultId);
+      const dataBuffer = new TextEncoder().encode(JSON.stringify(data));
 
       const { encryptedObject } = await encryptData({
         packageId,
         id,
-        data: new Uint8Array(data),
+        data: dataBuffer,
       });
 
       const tx = createItemMoveCallTx({
@@ -64,6 +65,7 @@ export function NewItemModalManager({ onNewItemCreated }) {
         }
       );
     } catch (error) {
+      console.log("🚀 ~ handleSaveItem ~ error:", error);
       toast.error("Failed to create item");
       setIsCreatingItem(false);
     }

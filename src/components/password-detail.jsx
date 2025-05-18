@@ -28,13 +28,8 @@ export function PasswordDetail({ entry }) {
   const { decryptData } = useSealDecrypt({ packageId });
 
   const handleTogglePassword = () => setShowPassword((prev) => !prev);
-
+  console.log("🚀 ~ PasswordDetail ~ decryptedPassword:", decryptedPassword);
   const decryptItem = async () => {
-    console.log("🚀 ~ decryptItem ~ entry:", {
-      entry,
-      vaultId,
-      isFetching: isFetchingRef.current,
-    });
     if (!entry || !vaultId || isFetchingRef.current) return;
     isFetchingRef.current = true;
 
@@ -50,8 +45,9 @@ export function PasswordDetail({ entry }) {
         encryptedObject: new Uint8Array(entry.data),
         txBytes,
       });
-      console.log("🚀 ~ decryptItem ~ decrypted:", decrypted);
-      setDecryptedPassword(decrypted);
+      const decodedData = new TextDecoder().decode(decrypted);
+      console.log("🚀 ~ decryptItem ~ decodedData:", decodedData);
+      setDecryptedPassword(JSON.parse(decodedData));
     } catch (err) {
       toast.error(`Unexpected error: ${err?.message || "Unknown error"}`);
     } finally {
@@ -60,10 +56,6 @@ export function PasswordDetail({ entry }) {
   };
 
   useEffect(() => {
-    console.log("🚀 ~ useEffect ~ entry:", {
-      entry,
-      isWalletConnected,
-    });
     if (!entry?.id?.id || !isWalletConnected) {
       return;
     }

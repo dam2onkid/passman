@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { SealClient, getAllowlistedKeyServers, SessionKey } from "@mysten/seal";
-import { Transaction } from "@mysten/sui/transactions";
 import { fromHex, toHex } from "@mysten/sui/utils";
 import { useSignPersonalMessage, useCurrentAccount } from "@mysten/dapp-kit";
 
@@ -97,25 +96,19 @@ export const useSealDecrypt = ({ packageId, ttlMin = 10 } = {}) => {
                 await newSessionKey.setPersonalMessageSignature(
                   result.signature
                 );
-                console.log("🚀 ~ decryptData:", {
-                  newSessionKey,
-                  txBytes,
-                  encryptedObject,
-                });
+
                 const decrypted = await sealClient.decrypt({
                   data: encryptedObject,
                   sessionKey: newSessionKey,
                   txBytes,
                 });
-                console.log("🚀 ~ decryptData ~ decrypted:", decrypted);
+
                 resolve(decrypted);
               } catch (error) {
-                console.log("🚀 ~ decryptData ~ error:", error);
                 reject(error);
               }
             },
             onError: (err) => {
-              console.log("🚀 ~ decryptData ~ err:", err);
               reject(err);
             },
           }
