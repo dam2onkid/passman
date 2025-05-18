@@ -194,6 +194,15 @@ export function PasswordDetail({ entry, onItemDeleted }) {
     );
 
     if (formFields.length === 0) return null;
+    const isPasswordField = (field) => {
+      if (field.type === "password") {
+        return true;
+      }
+      if (field.name === "recoveryPhrase") {
+        return true;
+      }
+      return false;
+    };
 
     return (
       <div className="space-y-6">
@@ -203,7 +212,7 @@ export function PasswordDetail({ entry, onItemDeleted }) {
               {field.label.toUpperCase()}
             </label>
             {isEditing ? (
-              field.type === "password" ? (
+              isPasswordField(field) ? (
                 <div className="relative">
                   <Input
                     id={field.name}
@@ -247,7 +256,7 @@ export function PasswordDetail({ entry, onItemDeleted }) {
             ) : (
               <div className="flex items-center justify-between rounded-md border p-2">
                 <div className="text-sm">
-                  {field.type === "password" && !showPassword[field.name] ? (
+                  {isPasswordField(field) && !showPassword[field.name] ? (
                     "••••••••••"
                   ) : field.type === "textarea" ? (
                     <div className="whitespace-pre-wrap">
@@ -258,7 +267,7 @@ export function PasswordDetail({ entry, onItemDeleted }) {
                   )}
                 </div>
                 <div className="flex items-center gap-1">
-                  {field.type === "password" && (
+                  {isPasswordField(field) && (
                     <>
                       <Button
                         variant="ghost"
@@ -310,9 +319,14 @@ export function PasswordDetail({ entry, onItemDeleted }) {
       <div className="flex h-full flex-col">
         {/* Header with actions */}
         <div className="flex items-center justify-between border-b p-4">
-          <h2 className="text-lg font-semibold">
-            {decryptedPassword?.itemName || entry.name}
-          </h2>
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/50">
+              {getItemIcon(entry.category)}
+            </div>
+            <h2 className="text-lg font-semibold">
+              {decryptedPassword?.itemName || entry.name}
+            </h2>
+          </div>
           <div className="flex items-center gap-2">
             <Button
               variant={isEditing ? "default" : "outline"}
@@ -363,16 +377,6 @@ export function PasswordDetail({ entry, onItemDeleted }) {
 
         {/* Password details - fixed height with scrolling */}
         <div className="flex-1 p-6 space-y-6 overflow-auto">
-          {/* Service icon and name */}
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/50">
-              {getItemIcon(entry.category)}
-            </div>
-            <div className="text-xl font-semibold">
-              {decryptedPassword?.itemName || entry.name}
-            </div>
-          </div>
-
           {/* Form fields */}
           {renderFormFields()}
 
