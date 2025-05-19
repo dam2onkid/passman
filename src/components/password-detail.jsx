@@ -115,7 +115,7 @@ export function PasswordDetail({ entry, onItemDeleted }) {
         itemId: entry.id.id,
       });
 
-      await signAndExecuteTransaction(
+      signAndExecuteTransaction(
         { transaction: tx },
         {
           onSuccess: async (result) => {
@@ -126,7 +126,6 @@ export function PasswordDetail({ entry, onItemDeleted }) {
             toast.success("Item deleted successfully");
             setShowDeleteDialog(false);
 
-            // Notify parent component that item was deleted
             if (onItemDeleted) {
               onItemDeleted(entry.id.id);
             }

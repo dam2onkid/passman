@@ -14,7 +14,6 @@ export function PasswordManager() {
   };
 
   const handleItemDeleted = (itemId) => {
-    // Clear the selected entry when deleted
     setSelectedEntry(null);
   };
 
