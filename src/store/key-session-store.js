@@ -5,15 +5,14 @@ const useKeySessionStore = create(
   persist(
     (set) => ({
       exportedSessionKey: null,
-      setExportedSessionKey: (exportedSessionKey) =>
-        set({ exportedSessionKey }),
+      setExportedSessionKey: (exportedSessionKey) => {
+        set({ exportedSessionKey: { ...exportedSessionKey } });
+      },
       reset: () => set({ exportedSessionKey: null }),
     }),
     {
       name: "key-session-storage",
-      partialize: (state) => ({
-        exportedSessionKey: state.exportedSessionKey,
-      }),
+      partialize: (state) => ({ exportedSessionKey: state.exportedSessionKey }),
     }
   )
 );

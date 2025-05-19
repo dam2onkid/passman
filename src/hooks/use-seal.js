@@ -61,59 +61,69 @@ export const useSealDecrypt = ({ packageId, ttlMin = 10 } = {}) => {
   });
 
   const { mutate: signPersonalMessage } = useSignPersonalMessage();
-  const { exportedSessionKey } = useKeySessionStore();
+  const { exportedSessionKey, setExportedSessionKey } = useKeySessionStore();
   const account = useCurrentAccount();
 
   const decryptData = async ({ encryptedObject, txBytes }) => {
     if (!account.address) return null;
 
     try {
-      // if (exportedSessionKey) {
-      //   const importedKey = await SessionKey.import(
-      //     JSON.parse(exportedSessionKey)
-      //   );
-      //   if (
-      //     !importedKey.isExpired() &&
-      //     importedKey.getAddress() === account.address
-      //   ) {
-      //     isFetchingRef.current = false;
-      //     return importedKey;
-      //   }
-      // }
+      let newSessionKey;
+      if (exportedSessionKey) {
+        const importedKey = await SessionKey.import(exportedSessionKey, {});
+        if (
+          !importedKey.isExpired() &&
+          importedKey.getAddress() === account.address
+        ) {
+          newSessionKey = importedKey;
+        } else {
+          setExportedSessionKey(null);
+        }
+      }
 
-      const newSessionKey = new SessionKey({
-        address: account.address,
-        packageId,
-        ttlMin,
+      // New session key
+      if (!exportedSessionKey || !newSessionKey) {
+        newSessionKey = new SessionKey({
+          address: account.address,
+          packageId,
+          ttlMin,
+        });
+        return new Promise((resolve, reject) => {
+          signPersonalMessage(
+            { message: newSessionKey.getPersonalMessage() },
+            {
+              onSuccess: async (result) => {
+                try {
+                  await newSessionKey.setPersonalMessageSignature(
+                    result.signature
+                  );
+                  setExportedSessionKey(newSessionKey.export());
+                  const decrypted = await sealClient.decrypt({
+                    data: encryptedObject,
+                    sessionKey: newSessionKey,
+                    txBytes,
+                  });
+
+                  resolve(decrypted);
+                } catch (error) {
+                  reject(error);
+                }
+              },
+              onError: (err) => {
+                reject(err);
+              },
+            }
+          );
+        });
+      }
+
+      // old session key
+      const decrypted = await sealClient.decrypt({
+        data: encryptedObject,
+        sessionKey: newSessionKey,
+        txBytes,
       });
-
-      return new Promise((resolve, reject) => {
-        signPersonalMessage(
-          { message: newSessionKey.getPersonalMessage() },
-          {
-            onSuccess: async (result) => {
-              try {
-                await newSessionKey.setPersonalMessageSignature(
-                  result.signature
-                );
-
-                const decrypted = await sealClient.decrypt({
-                  data: encryptedObject,
-                  sessionKey: newSessionKey,
-                  txBytes,
-                });
-
-                resolve(decrypted);
-              } catch (error) {
-                reject(error);
-              }
-            },
-            onError: (err) => {
-              reject(err);
-            },
-          }
-        );
-      });
+      return decrypted;
     } catch (err) {
       throw err;
     }
