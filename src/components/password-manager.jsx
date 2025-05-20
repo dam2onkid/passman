@@ -4,10 +4,12 @@ import { useState } from "react";
 import { PasswordList } from "@/components/password-list";
 import { PasswordDetail } from "@/components/password-detail";
 import { useSuiWallet } from "@/hooks/use-sui-wallet";
+import { useRefreshTrigger } from "@/lib/refresh-trigger";
 
 export function PasswordManager() {
   const [selectedEntry, setSelectedEntry] = useState(null);
   const { isConnected } = useSuiWallet();
+  const { trigger: triggerRefresh } = useRefreshTrigger();
 
   const handleSelectEntry = (entry) => {
     setSelectedEntry(entry);
@@ -15,6 +17,7 @@ export function PasswordManager() {
 
   const handleItemDeleted = (itemId) => {
     setSelectedEntry(null);
+    triggerRefresh();
   };
 
   if (!isConnected) {

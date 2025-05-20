@@ -44,6 +44,7 @@ export function PasswordDetail({ entry, onItemDeleted }) {
   const isFetchingRef = useRef(false);
   const [showPassword, setShowPassword] = useState({});
   const [decryptedPassword, setDecryptedPassword] = useState(null);
+  const [isDecrypting, setIsDecrypting] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
   const [copiedFields, setCopiedFields] = useState({});
@@ -151,6 +152,7 @@ export function PasswordDetail({ entry, onItemDeleted }) {
   const decryptItem = async () => {
     if (!entry || !vaultId || isFetchingRef.current) return;
     isFetchingRef.current = true;
+    setIsDecrypting(true);
 
     try {
       const { id } = getSealId(vaultId, entry.nonce);
@@ -172,6 +174,7 @@ export function PasswordDetail({ entry, onItemDeleted }) {
       toast.error(`Unexpected error: ${err?.message || "Unknown error"}`);
     } finally {
       isFetchingRef.current = false;
+      setIsDecrypting(false);
     }
   };
 
@@ -322,9 +325,7 @@ export function PasswordDetail({ entry, onItemDeleted }) {
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/50">
               {getItemIcon(entry.category)}
             </div>
-            <h2 className="text-lg font-semibold">
-              {decryptedPassword?.itemName || entry.name}
-            </h2>
+            <h2 className="text-lg font-semibold">{entry.name}</h2>
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -377,7 +378,18 @@ export function PasswordDetail({ entry, onItemDeleted }) {
         {/* Password details - fixed height with scrolling */}
         <div className="flex-1 p-6 space-y-6 overflow-auto">
           {/* Form fields */}
-          {renderFormFields()}
+          {isDecrypting ? (
+            <div className="space-y-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="space-y-1.5">
+                  <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+                  <div className="h-10 w-full bg-muted rounded animate-pulse" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            renderFormFields()
+          )}
 
           {/* Saved on */}
           {entry.savedOn && (

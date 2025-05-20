@@ -9,6 +9,7 @@ import useActiveVault from "@/hooks/use-active-vault";
 import useFetchItems from "@/hooks/use-fetch-items";
 import { getItemIcon } from "@/constants/source-type";
 import { NewItemModalManager } from "@/components/new-item-modal/new-item-modal-manager";
+import { useRefreshTrigger } from "@/lib/refresh-trigger";
 
 export const groupItemsByFirstLetter = (items) => {
   const grouped = {};
@@ -35,10 +36,20 @@ export function PasswordList({ onSelectEntry, selectedEntryId }) {
   const [searchQuery, setSearchQuery] = useState("");
   const { vaultId } = useActiveVault();
   const { items, loading, refetch } = useFetchItems(vaultId);
+  const { subscribe } = useRefreshTrigger();
 
   useEffect(() => {
     refetch();
   }, [vaultId]);
+
+  // Subscribe to refresh events
+  useEffect(() => {
+    const unsubscribe = subscribe(() => {
+      refetch();
+    });
+    return () => unsubscribe();
+  }, [subscribe, refetch]);
+
   // Filter entries based on search query
   const filteredGroupedItems = {};
   const groupedItems = groupItemsByFirstLetter(items);

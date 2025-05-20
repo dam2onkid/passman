@@ -69,7 +69,7 @@ export const useSealDecrypt = ({ packageId, ttlMin = 10 } = {}) => {
     if (!sessionKey) return false;
     const expire = sessionKey.creationTimeMs + sessionKey.ttlMin * 60 * 1000;
     if (expire < Date.now()) return false;
-    return sessionKey.getAddress() === account.address;
+    return sessionKey.address === account.address;
   };
 
   const decryptData = async ({ encryptedObject, txBytes, retry = false }) => {

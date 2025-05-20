@@ -47,7 +47,6 @@ export function NewItemModalManager({ onNewItemCreated }) {
         { transaction: tx },
         {
           onSuccess: async (result) => {
-            console.log("result", result);
             await client.waitForTransaction({
               digest: result.digest,
               options: { showEffects: true },
@@ -55,17 +54,15 @@ export function NewItemModalManager({ onNewItemCreated }) {
             toast.success("Item created successfully");
             closeModal();
             onNewItemCreated(itemType, data);
+            setIsCreatingItem(false);
           },
           onError: (error) => {
             toast.error("Failed to create item");
-          },
-          onFinally: () => {
             setIsCreatingItem(false);
           },
         }
       );
     } catch (error) {
-      console.log("🚀 ~ handleSaveItem ~ error:", error);
       toast.error("Failed to create item");
       setIsCreatingItem(false);
     }
