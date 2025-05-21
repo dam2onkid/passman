@@ -30,22 +30,25 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useSealDecrypt, getSealId } from "@/hooks/use-seal";
+import { useSealDecrypt, getSealId, useSealEncrypt } from "@/hooks/use-seal";
 import { useNetworkVariable } from "@/lib/network-config";
 import { useSuiWallet } from "@/hooks/use-sui-wallet";
 import useActiveVault from "@/hooks/use-active-vault";
 import {
   ownerSealApproveMoveCallTx,
   deleteItemMoveCallTx,
+  editItemMoveCallTx,
 } from "@/lib/construct-move-call";
 import { ITEM_TYPE_DATA, getItemIcon } from "@/constants/source-type";
 
 export function PasswordDetail({ entry, onItemDeleted }) {
+  const { encryptData } = useSealEncrypt();
   const isFetchingRef = useRef(false);
   const [showPassword, setShowPassword] = useState({});
   const [decryptedPassword, setDecryptedPassword] = useState(null);
   const [isDecrypting, setIsDecrypting] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({});
   const [copiedFields, setCopiedFields] = useState({});
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -75,11 +78,63 @@ export function PasswordDetail({ entry, onItemDeleted }) {
     });
   };
 
-  const handleToggleEdit = () => {
+  const handleToggleEdit = async () => {
     if (isEditing) {
-      // Save logic would go here
-      setIsEditing(false);
-      toast.success("Changes saved successfully!");
+      const hasChanges = Object.keys(formData).some(
+        (key) => formData[key] !== decryptedPassword?.[key]
+      );
+      if (!hasChanges) {
+        setIsEditing(false);
+        return;
+      }
+      if (!entry?.id?.id || !vaultId || !capId || !entry.nonce) {
+        toast.error("Missing required data for editing");
+        return;
+      }
+
+      try {
+        setIsSaving(true);
+        const { id } = getSealId(vaultId, entry.nonce);
+        const dataBuffer = new TextEncoder().encode(JSON.stringify(formData));
+
+        const { encryptedObject } = await encryptData({
+          packageId,
+          id,
+          data: dataBuffer,
+        });
+        const tx = editItemMoveCallTx({
+          capId,
+          name: formData.itemName,
+          encryptedObject,
+          itemId: entry.id.id,
+        });
+
+        signAndExecuteTransaction(
+          { transaction: tx },
+          {
+            onSuccess: async (result) => {
+              await suiClient.waitForTransaction({
+                digest: result.digest,
+                options: { showEffects: true },
+              });
+              toast.success("Item edited successfully");
+              setIsEditing(false);
+              setIsSaving(false);
+              decryptItem();
+            },
+            onError: (error) => {
+              toast.error(error?.message || "Failed to edit item");
+              setIsEditing(false);
+              setIsSaving(false);
+            },
+          }
+        );
+      } catch (error) {
+        toast.error(
+          `Failed to edit item: ${error?.message || "Unknown error"}`
+        );
+        setIsSaving(false);
+      }
     } else {
       setIsEditing(true);
       setFormData(decryptedPassword || {});
@@ -126,25 +181,17 @@ export function PasswordDetail({ entry, onItemDeleted }) {
             });
             toast.success("Item deleted successfully");
             setShowDeleteDialog(false);
-
-            if (onItemDeleted) {
-              onItemDeleted(entry.id.id);
-            }
+            onItemDeleted && onItemDeleted(entry.id.id);
+            setIsDeleting(false);
           },
           onError: (error) => {
-            console.error("Delete error:", error);
-            toast.error("Failed to delete item");
-          },
-          onFinally: () => {
+            toast.error(error?.message || "Failed to delete item");
             setIsDeleting(false);
           },
         }
       );
     } catch (error) {
-      console.error("Delete error:", error);
-      toast.error(
-        `Failed to delete item: ${error?.message || "Unknown error"}`
-      );
+      toast.error(error?.message || "Failed to delete item");
       setIsDeleting(false);
     }
   };
@@ -328,18 +375,41 @@ export function PasswordDetail({ entry, onItemDeleted }) {
             <h2 className="text-lg font-semibold">{entry.name}</h2>
           </div>
           <div className="flex items-center gap-2">
+            {isEditing && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 px-2"
+                onClick={() => {
+                  setIsEditing(false);
+                  setFormData(decryptedPassword || {});
+                }}
+              >
+                Cancel
+              </Button>
+            )}
             <Button
               variant={isEditing ? "default" : "outline"}
               size="sm"
-              className="h-8 px-2"
+              className="h-7 px-2"
               onClick={handleToggleEdit}
             >
-              {isEditing ? (
-                <Check className="h-4 w-4" />
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : isEditing ? (
+                <>
+                  <Check className="h-4 w-4" />
+                  Save
+                </>
               ) : (
-                <Pencil className="h-4 w-4" />
+                <>
+                  <Pencil className="h-4 w-4" />
+                  Edit
+                </>
               )}
-              {isEditing ? "Save" : "Edit"}
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

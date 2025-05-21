@@ -33,6 +33,22 @@ export function createItemMoveCallTx(args = {}, gasBudget = GAS_BUDGET) {
   return tx;
 }
 
+export function editItemMoveCallTx(args = {}, gasBudget = GAS_BUDGET) {
+  const { capId, itemId, name, encryptedObject } = args;
+  const tx = new Transaction();
+  tx.moveCall({
+    target: `${PACKAGE_ID}::vault::update_item`,
+    arguments: [
+      tx.object(capId),
+      tx.pure.string(name),
+      tx.pure.vector("u8", Array.from(encryptedObject)),
+      tx.object(itemId),
+    ],
+  });
+  tx.setGasBudget(gasBudget);
+  return tx;
+}
+
 export function deleteItemMoveCallTx(args = {}, gasBudget = GAS_BUDGET) {
   const { vaultId, capId, itemId } = args;
   const tx = new Transaction();
