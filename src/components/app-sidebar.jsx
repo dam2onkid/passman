@@ -42,8 +42,8 @@ const data = {
       icon: List,
     },
     {
-      title: "Favorites",
-      url: "/dashboard/favorites",
+      title: "Share",
+      url: "/dashboard/share",
       icon: Star,
     },
     {

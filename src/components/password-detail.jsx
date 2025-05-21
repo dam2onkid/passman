@@ -275,7 +275,7 @@ export function PasswordDetail({ entry, onItemDeleted }) {
       <div className="space-y-6">
         {formFields.map((field) => (
           <div key={field.name} className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
+            <label className="text-xs font-medium text-muted-foreground ">
               {field.label.toUpperCase()}
             </label>
             {isEditing ? (
@@ -475,7 +475,7 @@ export function PasswordDetail({ entry, onItemDeleted }) {
         </div>
 
         {/* Password details - fixed height with scrolling */}
-        <div className="flex-1 p-6 space-y-6 overflow-auto">
+        <div className="flex-1 px-[20%] py-6 space-y-6 overflow-auto">
           {/* Form fields */}
           {isDecrypting ? (
             <div className="space-y-6">
