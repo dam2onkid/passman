@@ -138,7 +138,7 @@ export function PasswordDetail({ entry, onItemDeleted }) {
               toast.success("Item edited successfully");
               setIsEditing(false);
               setIsSaving(false);
-              decryptItem();
+              setDecryptedPassword(formData);
             },
             onError: (error) => {
               toast.error(error?.message || "Failed to edit item");
@@ -563,6 +563,9 @@ export function PasswordDetail({ entry, onItemDeleted }) {
             className="sm:max-w-md bg-black border-zinc-800"
             hideCloseButton
           >
+            <DialogHeader className="sr-only">
+              <DialogTitle>Password Generator</DialogTitle>
+            </DialogHeader>
             <PasswordGenerator
               onCancel={() => setShowPasswordGenerator(false)}
               onUsePassword={handleUseGeneratedPassword}

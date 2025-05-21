@@ -147,6 +147,9 @@ export function ItemFormModal({
           className="sm:max-w-md bg-black border-zinc-800"
           hideCloseButton
         >
+          <DialogHeader className="sr-only">
+            <DialogTitle>Password Generator</DialogTitle>
+          </DialogHeader>
           <PasswordGenerator
             onCancel={() => setShowPasswordGenerator(false)}
             onUsePassword={handleUseGeneratedPassword}
