@@ -40,6 +40,7 @@ import {
   editItemMoveCallTx,
 } from "@/lib/construct-move-call";
 import { ITEM_TYPE_DATA, getItemIcon } from "@/constants/source-type";
+import { PasswordGenerator } from "@/components/password-generator";
 
 export function PasswordDetail({ entry, onItemDeleted }) {
   const { encryptData } = useSealEncrypt();
@@ -53,6 +54,8 @@ export function PasswordDetail({ entry, onItemDeleted }) {
   const [copiedFields, setCopiedFields] = useState({});
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showPasswordGenerator, setShowPasswordGenerator] = useState(false);
+  const [activePasswordField, setActivePasswordField] = useState(null);
 
   const { vaultId, capId } = useActiveVault();
   const packageId = useNetworkVariable("passman");
@@ -76,6 +79,21 @@ export function PasswordDetail({ entry, onItemDeleted }) {
       ...formData,
       [name]: value,
     });
+  };
+
+  const openPasswordGenerator = (fieldName) => {
+    setActivePasswordField(fieldName);
+    setShowPasswordGenerator(true);
+  };
+
+  const handleUseGeneratedPassword = (password) => {
+    if (activePasswordField) {
+      setFormData({
+        ...formData,
+        [activePasswordField]: password,
+      });
+      setShowPasswordGenerator(false);
+    }
   };
 
   const handleToggleEdit = async () => {
@@ -269,21 +287,32 @@ export function PasswordDetail({ entry, onItemDeleted }) {
                     type={showPassword[field.name] ? "text" : "password"}
                     value={formData[field.name] || ""}
                     onChange={handleInputChange}
-                    className="pr-10"
+                    className="pr-20"
                   />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full px-3"
-                    onClick={() => togglePasswordVisibility(field.name)}
-                  >
-                    {showPassword[field.name] ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
+                  <div className="absolute right-0 top-0 h-full flex">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-full px-2"
+                      onClick={() => togglePasswordVisibility(field.name)}
+                    >
+                      {showPassword[field.name] ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-full px-2 text-xs"
+                      onClick={() => openPasswordGenerator(field.name)}
+                    >
+                      Generate
+                    </Button>
+                  </div>
                 </div>
               ) : field.type === "textarea" ? (
                 <textarea
@@ -523,6 +552,24 @@ export function PasswordDetail({ entry, onItemDeleted }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Password Generator Dialog */}
+      {showPasswordGenerator && (
+        <Dialog
+          open={showPasswordGenerator}
+          onOpenChange={setShowPasswordGenerator}
+        >
+          <DialogContent
+            className="sm:max-w-md bg-black border-zinc-800"
+            hideCloseButton
+          >
+            <PasswordGenerator
+              onCancel={() => setShowPasswordGenerator(false)}
+              onUsePassword={handleUseGeneratedPassword}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 }

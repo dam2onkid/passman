@@ -8,10 +8,12 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ITEM_TYPE_DATA } from "@/constants/source-type";
 import { ArrowLeft, Eye, EyeOff, Loader2 } from "lucide-react";
+import { PasswordGenerator } from "@/components/password-generator";
 
 export function ItemFormModal({
   isOpen,
@@ -24,6 +26,8 @@ export function ItemFormModal({
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState({});
+  const [showPasswordGenerator, setShowPasswordGenerator] = useState(false);
+  const [activePasswordField, setActivePasswordField] = useState(null);
 
   const itemTypeInfo = ITEM_TYPE_DATA[itemType];
 
@@ -48,6 +52,7 @@ export function ItemFormModal({
       setFormData(initialData);
       setErrors(initialErrors);
       setShowPassword(initialPasswordVisibility);
+      setShowPasswordGenerator(false);
     }
   }, [isOpen, itemType, itemTypeInfo]);
 
@@ -72,6 +77,21 @@ export function ItemFormModal({
       ...showPassword,
       [fieldName]: !showPassword[fieldName],
     });
+  };
+
+  const openPasswordGenerator = (fieldName) => {
+    setActivePasswordField(fieldName);
+    setShowPasswordGenerator(true);
+  };
+
+  const handleUseGeneratedPassword = (password) => {
+    if (activePasswordField) {
+      setFormData({
+        ...formData,
+        [activePasswordField]: password,
+      });
+      setShowPasswordGenerator(false);
+    }
   };
 
   const validateForm = () => {
@@ -120,6 +140,22 @@ export function ItemFormModal({
     return null;
   }
 
+  if (showPasswordGenerator) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent
+          className="sm:max-w-md bg-black border-zinc-800"
+          hideCloseButton
+        >
+          <PasswordGenerator
+            onCancel={() => setShowPasswordGenerator(false)}
+            onUsePassword={handleUseGeneratedPassword}
+          />
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
@@ -136,85 +172,102 @@ export function ItemFormModal({
             New {itemTypeInfo.label}
           </DialogTitle>
         </DialogHeader>
-        <div className="max-h-[80vh] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden hover:[scrollbar-width:thin] hover:[-ms-overflow-style:auto] hover:[&::-webkit-scrollbar]:block hover:[&::-webkit-scrollbar]:w-1.5 hover:[&::-webkit-scrollbar-thumb]:bg-gray-200 hover:[&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-track]:bg-transparent">
-          <form onSubmit={handleSubmit} className="space-y-4 py-4">
-            {itemTypeInfo.formFields.map((field) => (
-              <div key={field.name} className="space-y-2">
-                <div className="flex justify-between">
-                  <label htmlFor={field.name} className="text-sm font-medium">
-                    {field.label}
-                    {field.required && (
-                      <span className="text-red-500 ml-1">*</span>
+        <ScrollArea className="max-h-[80vh]">
+          <div className="px-3">
+            <form onSubmit={handleSubmit} className="space-y-4 py-4">
+              {itemTypeInfo.formFields.map((field) => (
+                <div key={field.name} className="space-y-2">
+                  <div className="flex justify-between">
+                    <label htmlFor={field.name} className="text-sm font-medium">
+                      {field.label}
+                      {field.required && (
+                        <span className="text-red-500 ml-1">*</span>
+                      )}
+                    </label>
+                    {errors[field.name] && (
+                      <span className="text-sm text-red-500">
+                        {errors[field.name]}
+                      </span>
                     )}
-                  </label>
-                  {errors[field.name] && (
-                    <span className="text-sm text-red-500">
-                      {errors[field.name]}
-                    </span>
-                  )}
-                </div>
+                  </div>
 
-                {field.type === "textarea" ? (
-                  <textarea
-                    id={field.name}
-                    name={field.name}
-                    value={formData[field.name] || ""}
-                    onChange={handleInputChange}
-                    className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    placeholder={field.placeholder}
-                  />
-                ) : field.type === "password" ? (
-                  <div className="relative">
+                  {field.type === "textarea" ? (
+                    <textarea
+                      id={field.name}
+                      name={field.name}
+                      value={formData[field.name] || ""}
+                      onChange={handleInputChange}
+                      className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      placeholder={field.placeholder}
+                    />
+                  ) : field.type === "password" ? (
+                    <div className="relative">
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        type={showPassword[field.name] ? "text" : "password"}
+                        value={formData[field.name] || ""}
+                        onChange={handleInputChange}
+                        placeholder={field.placeholder}
+                        className="pr-20"
+                      />
+                      <div className="absolute right-0 top-0 h-full flex">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-full px-2"
+                          onClick={() => togglePasswordVisibility(field.name)}
+                        >
+                          {showPassword[field.name] ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-full px-2 text-xs"
+                          onClick={() => openPasswordGenerator(field.name)}
+                        >
+                          Generate
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
                     <Input
                       id={field.name}
                       name={field.name}
-                      type={showPassword[field.name] ? "text" : "password"}
+                      type={field.type}
                       value={formData[field.name] || ""}
                       onChange={handleInputChange}
                       placeholder={field.placeholder}
-                      className="pr-10"
                     />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-0 top-0 h-full px-3"
-                      onClick={() => togglePasswordVisibility(field.name)}
-                    >
-                      {showPassword[field.name] ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                ) : (
-                  <Input
-                    id={field.name}
-                    name={field.name}
-                    type={field.type}
-                    value={formData[field.name] || ""}
-                    onChange={handleInputChange}
-                    placeholder={field.placeholder}
-                  />
-                )}
-              </div>
-            ))}
-
-            <DialogFooter>
-              <Button type="submit" className="w-full" disabled={isCreating}>
-                {isCreating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  "Create"
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </div>
+                  )}
+                </div>
+              ))}
+            </form>
+          </div>
+        </ScrollArea>
+        <DialogFooter>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isCreating}
+            onClick={handleSubmit}
+          >
+            {isCreating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              "Create"
+            )}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
