@@ -56,9 +56,10 @@ import useFetchShareItems from "@/hooks/use-fetch-share-items";
 import useActiveVault from "@/hooks/use-active-vault";
 import { useSuiWallet } from "@/hooks/use-sui-wallet";
 import { deleteShareMoveCallTx } from "@/lib/construct-move-call";
+import { UpdateShareModal } from "@/components/update-share-modal";
 
 // Share item type definition
-export const shareItemColumns = (handleDeleteClick) => [
+export const shareItemColumns = (handleDeleteClick, handleUpdateClick) => [
   {
     accessorKey: "id",
     header: ({ column }) => {
@@ -245,7 +246,10 @@ export const shareItemColumns = (handleDeleteClick) => [
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem disabled={isExpired}>
+            <DropdownMenuItem
+              disabled={isExpired}
+              onClick={() => handleUpdateClick(shareItem)}
+            >
               <Pencil className="mr-2 h-4 w-4" />
               Update share
             </DropdownMenuItem>
@@ -273,12 +277,24 @@ function ShareDataTable({ columns, data = [], isLoading, onShareDeleted }) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [shareToDelete, setShareToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [shareToUpdate, setShareToUpdate] = useState(null);
 
   const { signAndExecuteTransaction, client: suiClient } = useSuiWallet();
 
   const handleDeleteClick = (shareItem) => {
     setShareToDelete(shareItem);
     setShowDeleteDialog(true);
+  };
+
+  const handleUpdateClick = (shareItem) => {
+    setShareToUpdate(shareItem);
+    setShowUpdateModal(true);
+  };
+
+  const handleShareUpdated = (updatedShareId) => {
+    // Refresh the share list after update
+    onShareDeleted && onShareDeleted(updatedShareId);
   };
 
   const handleDeleteConfirm = async () => {
@@ -320,7 +336,7 @@ function ShareDataTable({ columns, data = [], isLoading, onShareDeleted }) {
     }
   };
 
-  const columnsArray = columns(handleDeleteClick);
+  const columnsArray = columns(handleDeleteClick, handleUpdateClick);
 
   const table = useReactTable({
     data,
@@ -494,6 +510,14 @@ function ShareDataTable({ columns, data = [], isLoading, onShareDeleted }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Update Share Modal */}
+      <UpdateShareModal
+        isOpen={showUpdateModal}
+        onClose={() => setShowUpdateModal(false)}
+        shareItem={shareToUpdate}
+        onShareUpdated={handleShareUpdated}
+      />
     </div>
   );
 }

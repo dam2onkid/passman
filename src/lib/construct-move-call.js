@@ -104,3 +104,19 @@ export function deleteShareMoveCallTx(args = {}, gasBudget = GAS_BUDGET) {
   tx.setGasBudget(gasBudget);
   return tx;
 }
+
+export function updateShareMoveCallTx(args = {}, gasBudget = GAS_BUDGET) {
+  const { capId, shareId, recipients, ttl } = args;
+  const tx = new Transaction();
+  tx.moveCall({
+    target: `${PACKAGE_ID}::share::update_share_item`,
+    arguments: [
+      tx.object(capId),
+      tx.object(shareId),
+      tx.pure.vector("address", recipients),
+      tx.pure.u64(ttl),
+    ],
+  });
+  tx.setGasBudget(gasBudget);
+  return tx;
+}
