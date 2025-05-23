@@ -42,7 +42,13 @@ export default function useFetchShareItems(vaultId) {
           options: { showContent: true },
         });
         const _item = itemRes?.data?.content?.fields;
-        return { ...share, id: share?.id?.id, cap, itemName: _item.name };
+        return {
+          ...share,
+          id: share?.id?.id,
+          capId: cap?.id?.id,
+          itemName: _item.name,
+          isExpired: Date.now() > share.created_at + share.ttl,
+        };
       });
 
       const processedItems = await Promise.all(promiseItems);

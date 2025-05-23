@@ -93,3 +93,14 @@ export function shareItemMoveCallTx(args = {}, gasBudget = GAS_BUDGET) {
   tx.setGasBudget(gasBudget);
   return tx;
 }
+
+export function deleteShareMoveCallTx(args = {}, gasBudget = GAS_BUDGET) {
+  const { capId, shareId } = args;
+  const tx = new Transaction();
+  tx.moveCall({
+    target: `${PACKAGE_ID}::share::delete_share_item`,
+    arguments: [tx.object(capId), tx.object(shareId)],
+  });
+  tx.setGasBudget(gasBudget);
+  return tx;
+}

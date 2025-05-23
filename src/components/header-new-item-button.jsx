@@ -4,12 +4,14 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNewItemModal } from "@/hooks/use-new-item-modal";
 import { useSuiWallet } from "@/hooks/use-sui-wallet";
+import useActiveVault from "@/hooks/use-active-vault";
 
 export function HeaderNewItemButton() {
   const { openModal } = useNewItemModal();
   const { isConnected } = useSuiWallet();
+  const { activeVault } = useActiveVault();
 
-  if (!isConnected) {
+  if (!isConnected || !activeVault) {
     return null;
   }
 

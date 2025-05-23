@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import {
-  ColumnDef,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
@@ -15,8 +15,8 @@ import {
   MoreHorizontal,
   Copy,
   Trash2,
-  Eye,
   Loader2,
+  Pencil,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -25,9 +25,16 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -38,12 +45,20 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 import useFetchShareItems from "@/hooks/use-fetch-share-items";
 import useActiveVault from "@/hooks/use-active-vault";
 import { useSuiWallet } from "@/hooks/use-sui-wallet";
+import { deleteShareMoveCallTx } from "@/lib/construct-move-call";
 
 // Share item type definition
-export const shareItemColumns = [
+export const shareItemColumns = (handleDeleteClick) => [
   {
     accessorKey: "id",
     header: ({ column }) => {
@@ -61,7 +76,7 @@ export const shareItemColumns = [
     cell: ({ row }) => {
       const shareId = row.getValue("id");
       const truncatedId = shareId
-        ? `${shareId.slice(0, 8)}...${shareId.slice(-8)}`
+        ? `${shareId.slice(0, 3)}...${shareId.slice(-3)}`
         : "N/A";
 
       return (
@@ -125,7 +140,16 @@ export const shareItemColumns = [
         <div className="flex flex-wrap gap-1">
           {recipients.map((recipient, index) => (
             <Badge key={index} variant="secondary" className="text-xs">
-              {`${recipient.slice(0, 6)}...${recipient.slice(-6)}`}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    {`${recipient.slice(0, 4)}...${recipient.slice(-4)}`}
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{recipient}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </Badge>
           ))}
           {recipients.length === 0 && (
@@ -169,19 +193,38 @@ export const shareItemColumns = [
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           className="h-8 px-2"
         >
-          TTL
+          Expiration
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
     },
     cell: ({ row }) => {
       const ttl = parseInt(row.getValue("ttl"));
-      const hours = Math.floor(ttl / (1000 * 60 * 60));
-      const minutes = Math.floor((ttl % (1000 * 60 * 60)) / (1000 * 60));
-
+      const createdAt = parseInt(row.getValue("created_at"));
+      const expirationDate = new Date(createdAt + ttl);
       return (
         <Badge variant="outline">
-          {hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`}
+          {expirationDate.toLocaleDateString()}{" "}
+          {expirationDate.toLocaleTimeString()}
+        </Badge>
+      );
+    },
+  },
+  {
+    accessorKey: "isExpired",
+    header: "Status",
+    cell: ({ row }) => {
+      const isExpired = row.getValue("isExpired");
+      return (
+        <Badge
+          variant="outline"
+          className={
+            isExpired
+              ? "text-red-500 border-red-500"
+              : "text-green-500 border-green-500"
+          }
+        >
+          {isExpired ? "Expired" : "Active"}
         </Badge>
       );
     },
@@ -190,8 +233,8 @@ export const shareItemColumns = [
     id: "actions",
     enableHiding: false,
     cell: ({ row }) => {
+      const isExpired = row.getValue("isExpired");
       const shareItem = row.original;
-
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -202,30 +245,17 @@ export const shareItemColumns = [
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() =>
-                navigator.clipboard.writeText(shareItem.id?.id || "")
-              }
-            >
-              <Copy className="mr-2 h-4 w-4" />
-              Copy share ID
+            <DropdownMenuItem disabled={isExpired}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Update share
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() =>
-                navigator.clipboard.writeText(shareItem.item_id || "")
-              }
+              className="text-destructive"
+              disabled={isExpired}
+              onClick={() => handleDeleteClick(shareItem)}
             >
-              <Copy className="mr-2 h-4 w-4" />
-              Copy item ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <Eye className="mr-2 h-4 w-4" />
-              View details
-            </DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive">
               <Trash2 className="mr-2 h-4 w-4" />
-              Revoke share
+              Delete share
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -234,16 +264,67 @@ export const shareItemColumns = [
   },
 ];
 
-function ShareDataTable({ columns, data = sampleShares, isLoading }) {
+function ShareDataTable({ columns, data = [], isLoading, onShareDeleted }) {
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState({});
   const [rowSelection, setRowSelection] = useState({});
   const [globalFilter, setGlobalFilter] = useState("");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [shareToDelete, setShareToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const { signAndExecuteTransaction, client: suiClient } = useSuiWallet();
+
+  const handleDeleteClick = (shareItem) => {
+    setShareToDelete(shareItem);
+    setShowDeleteDialog(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!shareToDelete?.capId || !shareToDelete?.id) {
+      toast.error("Missing required data for deletion");
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const tx = deleteShareMoveCallTx({
+        capId: shareToDelete.capId,
+        shareId: shareToDelete.id,
+      });
+
+      signAndExecuteTransaction(
+        { transaction: tx },
+        {
+          onSuccess: async (result) => {
+            await suiClient.waitForTransaction({
+              digest: result.digest,
+              options: { showEffects: true },
+            });
+            toast.success("Share deleted successfully");
+            setShowDeleteDialog(false);
+            setShareToDelete(null);
+            onShareDeleted && onShareDeleted(shareToDelete.id);
+            setIsDeleting(false);
+          },
+          onError: (error) => {
+            toast.error(error?.message || "Failed to delete share");
+            setIsDeleting(false);
+          },
+        }
+      );
+    } catch (error) {
+      toast.error(error?.message || "Failed to delete share");
+      setIsDeleting(false);
+    }
+  };
+
+  const columnsArray = columns(handleDeleteClick);
 
   const table = useReactTable({
     data,
-    columns,
+    columns: columnsArray,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
@@ -273,10 +354,10 @@ function ShareDataTable({ columns, data = sampleShares, isLoading }) {
           className="max-w-sm"
         />
         <div className="flex items-center space-x-2">
-          <span className="text-sm text-muted-foreground">
+          {/* <span className="text-sm text-muted-foreground">
             {table.getFilteredSelectedRowModel().rows.length} of{" "}
             {table.getFilteredRowModel().rows.length} row(s) selected.
-          </span>
+          </span> */}
         </div>
       </div>
       <div className="rounded-md border">
@@ -285,7 +366,7 @@ function ShareDataTable({ columns, data = sampleShares, isLoading }) {
             <TableBody>
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
+                  colSpan={columnsArray.length}
                   className="h-24 text-center"
                 >
                   <div className="flex items-center justify-center space-x-4">
@@ -337,7 +418,7 @@ function ShareDataTable({ columns, data = sampleShares, isLoading }) {
                 ) : (
                   <TableRow>
                     <TableCell
-                      colSpan={columns.length}
+                      colSpan={columnsArray.length}
                       className="h-24 text-center"
                     >
                       No shares found.
@@ -373,6 +454,46 @@ function ShareDataTable({ columns, data = sampleShares, isLoading }) {
           </Button>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Share</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the share for "
+              {shareToDelete?.itemName || "this item"}"? This action cannot be
+              undone and will revoke access for all recipients.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-row justify-end gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteDialog(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Share
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -388,6 +509,11 @@ export default function ShareList() {
     }
   }, [isConnected, vaultId]);
 
+  const handleShareDeleted = (deletedShareId) => {
+    // Refetch the shares to update the list
+    refetch();
+  };
+
   return (
     <div className="container mx-auto py-6">
       <div className="mb-6">
@@ -400,6 +526,7 @@ export default function ShareList() {
         columns={shareItemColumns}
         data={items}
         isLoading={loading}
+        onShareDeleted={handleShareDeleted}
       />
     </div>
   );

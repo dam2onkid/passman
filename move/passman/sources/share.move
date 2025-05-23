@@ -53,10 +53,12 @@ public fun update_share_item(cap: &Cap, share: &mut Share, recipients: vector<ad
     share.recipients = recipients
 }
 
-public fun delete_share_item(cap: &Cap, share: Share) {
+public fun delete_share_item(cap: Cap, share: Share) {
     assert!(object::id(&share) == cap.share_id);
     let Share { id, .. } = share;
+    let Cap {id: capId, ..} = cap;
     object::delete(id);
+    object::delete(capId)
 }
 
 public entry fun share_item_entry(vault: &Vault, item: &Item, recipients: vector<address>, created_at: u64, ttl: u64, ctx: &mut TxContext) {
