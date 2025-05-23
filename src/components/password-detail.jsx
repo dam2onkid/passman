@@ -12,9 +12,19 @@ import {
   Trash2,
   Loader2,
   Share,
+  Key,
+  Mail,
+  User,
+  Globe,
+  FileText,
+  Lock,
+  CreditCard,
+  Calendar,
+  Shield,
+  Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
@@ -267,6 +277,7 @@ export function PasswordDetail({ entry, onItemDeleted }) {
     );
 
     if (formFields.length === 0) return null;
+
     const isPasswordField = (field) => {
       if (field.type === "password") {
         return true;
@@ -277,121 +288,191 @@ export function PasswordDetail({ entry, onItemDeleted }) {
       return false;
     };
 
+    const getFieldIcon = (field) => {
+      const iconMap = {
+        username: User,
+        email: Mail,
+        password: Key,
+        url: Globe,
+        website: Globe,
+        notes: FileText,
+        recoveryPhrase: Lock,
+        cardNumber: CreditCard,
+        expiryDate: Calendar,
+        cvv: Shield,
+        walletAddress: Wallet,
+      };
+
+      if (field.type === "password" || field.name === "recoveryPhrase") {
+        return Key;
+      }
+
+      return iconMap[field.name] || FileText;
+    };
+
     return (
-      <div className="space-y-6">
-        {formFields.map((field) => (
-          <div key={field.name} className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground ">
-              {field.label.toUpperCase()}
-            </label>
-            {isEditing ? (
-              isPasswordField(field) ? (
+      <div className="space-y-4">
+        {formFields.map((field) => {
+          const IconComponent = getFieldIcon(field);
+          const fieldValue = decryptedPassword[field.name] || "";
+          const isPassword = isPasswordField(field);
+          const isVisible = showPassword[field.name];
+          const isCopied = copiedFields[field.name];
+
+          return (
+            <div key={field.name} className="group">
+              <div className="flex items-center gap-2 mb-2">
+                <IconComponent className="h-4 w-4 text-muted-foreground" />
+                <label className="text-sm font-medium text-foreground">
+                  {field.label}
+                </label>
+              </div>
+
+              {isEditing ? (
                 <div className="relative">
-                  <Input
-                    id={field.name}
-                    name={field.name}
-                    type={showPassword[field.name] ? "text" : "password"}
-                    value={formData[field.name] || ""}
-                    onChange={handleInputChange}
-                    className="pr-20"
-                  />
-                  <div className="absolute right-0 top-0 h-full flex">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-full px-2"
-                      onClick={() => togglePasswordVisibility(field.name)}
-                    >
-                      {showPassword[field.name] ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-full px-2 text-xs"
-                      onClick={() => openPasswordGenerator(field.name)}
-                    >
-                      Generate
-                    </Button>
-                  </div>
-                </div>
-              ) : field.type === "textarea" ? (
-                <textarea
-                  id={field.name}
-                  name={field.name}
-                  value={formData[field.name] || ""}
-                  onChange={handleInputChange}
-                  className="w-full min-h-[100px] rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                />
-              ) : (
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type={field.type}
-                  value={formData[field.name] || ""}
-                  onChange={handleInputChange}
-                />
-              )
-            ) : (
-              <div className="flex items-center justify-between rounded-md border p-2">
-                <div className="text-sm">
-                  {isPasswordField(field) && !showPassword[field.name] ? (
-                    "••••••••••"
-                  ) : field.type === "textarea" ? (
-                    <div className="whitespace-pre-wrap">
-                      {decryptedPassword[field.name] || ""}
+                  {isPassword ? (
+                    <div className="relative">
+                      <Input
+                        id={field.name}
+                        name={field.name}
+                        type={isVisible ? "text" : "password"}
+                        value={formData[field.name] || ""}
+                        onChange={handleInputChange}
+                        className="pr-24 min-h-[44px] rounded-lg border-border bg-background/50 hover:bg-background transition-colors focus:border-primary"
+                      />
+                      <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-muted-foreground hover:text-foreground transition-colors"
+                          onClick={() => togglePasswordVisibility(field.name)}
+                        >
+                          {isVisible ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                          <span className="sr-only">
+                            {isVisible ? "Hide" : "Show"} {field.label}
+                          </span>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                          onClick={() => openPasswordGenerator(field.name)}
+                        >
+                          Generate
+                        </Button>
+                      </div>
                     </div>
+                  ) : field.type === "textarea" ? (
+                    <textarea
+                      id={field.name}
+                      name={field.name}
+                      value={formData[field.name] || ""}
+                      onChange={handleInputChange}
+                      className="w-full min-h-[200px] max-h-[500px] rounded-lg border border-border bg-background/50 hover:bg-background transition-colors px-4 py-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2  "
+                      placeholder={`Enter ${field.label.toLowerCase()}...`}
+                    />
                   ) : (
-                    decryptedPassword[field.name] || ""
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      type={field.type}
+                      value={formData[field.name] || ""}
+                      onChange={handleInputChange}
+                      className={`min-h-[44px] rounded-lg border-border bg-background/50 hover:bg-background transition-colors focus:border-primary ${
+                        field.name === "walletAddress"
+                          ? "font-mono text-sm"
+                          : ""
+                      }`}
+                      placeholder={`Enter ${field.label.toLowerCase()}...`}
+                    />
                   )}
                 </div>
-                <div className="flex items-center gap-1">
-                  {isPasswordField(field) && (
-                    <>
+              ) : (
+                <div className="relative">
+                  <div className="flex items-center min-h-[44px] rounded-lg border border-border bg-background/50 hover:bg-background transition-colors group-hover:border-border/80">
+                    <div className="flex-1 px-4 py-3">
+                      {field.type === "textarea" ? (
+                        <div className="whitespace-pre-wrap text-sm leading-relaxed max-h-[300px] overflow-auto pr-2">
+                          {fieldValue}
+                        </div>
+                      ) : field.name === "walletAddress" ? (
+                        <div className="text-sm font-mono break-all">
+                          {isPassword && !isVisible ? (
+                            "••••••••••••••••"
+                          ) : (
+                            <>
+                              <span className="block sm:hidden">
+                                {fieldValue
+                                  ? `${fieldValue.slice(
+                                      0,
+                                      8
+                                    )}...${fieldValue.slice(-8)}`
+                                  : ""}
+                              </span>
+                              <span className="hidden sm:block">
+                                {fieldValue}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-sm font-mono">
+                          {isPassword && !isVisible
+                            ? "••••••••••••••••"
+                            : fieldValue}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1 px-2">
+                      {isPassword && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-muted-foreground hover:text-foreground transition-colors"
+                          onClick={() => togglePasswordVisibility(field.name)}
+                        >
+                          {isVisible ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                          <span className="sr-only">
+                            {isVisible ? "Hide" : "Show"} {field.label}
+                          </span>
+                        </Button>
+                      )}
+
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 px-2"
-                        onClick={() => togglePasswordVisibility(field.name)}
+                        className="h-8 px-2 text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={() =>
+                          handleCopyToClipboard(field.name, fieldValue)
+                        }
                       >
-                        {showPassword[field.name] ? (
-                          <EyeOff className="h-3.5 w-3.5 mr-1" />
+                        {isCopied ? (
+                          <Check className="h-4 w-4 text-green-600" />
                         ) : (
-                          <Eye className="h-3.5 w-3.5 mr-1" />
+                          <Copy className="h-4 w-4" />
                         )}
-                        {showPassword[field.name] ? "Hide" : "Show"}
+                        <span className="sr-only">
+                          {isCopied ? "Copied" : "Copy"} {field.label}
+                        </span>
                       </Button>
-                      <Separator orientation="vertical" className="h-4" />
-                    </>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2"
-                    onClick={() =>
-                      handleCopyToClipboard(
-                        field.name,
-                        decryptedPassword[field.name]
-                      )
-                    }
-                  >
-                    {copiedFields[field.name] ? (
-                      <Check className="h-3.5 w-3.5 mr-1" />
-                    ) : (
-                      <Copy className="h-3.5 w-3.5 mr-1" />
-                    )}
-                    {copiedFields[field.name] ? "Copied" : "Copy"}
-                  </Button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        ))}
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -481,7 +562,7 @@ export function PasswordDetail({ entry, onItemDeleted }) {
         </div>
 
         {/* Password details - fixed height with scrolling */}
-        <div className="flex-1 px-[20%] py-6 space-y-6 overflow-auto">
+        <div className="flex-1 px-[10%] py-6 space-y-6 overflow-auto">
           {/* Form fields */}
           {isDecrypting ? (
             <div className="space-y-6">

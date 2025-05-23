@@ -1,4 +1,4 @@
-import { fromHex } from "@mysten/sui/utils";
+import { fromHex, SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
 import { Transaction } from "@mysten/sui/transactions";
 import { PACKAGE_ID } from "@/constants/config";
 const GAS_BUDGET = 10000000;
@@ -70,6 +70,21 @@ export function ownerSealApproveMoveCallTx(args = {}) {
       tx.pure.vector("u8", fromHex(id)),
       tx.object(vaultId),
       tx.object(itemId),
+    ],
+  });
+  return tx;
+}
+
+// Seal
+export function shareSealApproveMoveCallTx(args = {}) {
+  const { id, shareId } = args;
+  const tx = new Transaction();
+  tx.moveCall({
+    target: `${PACKAGE_ID}::share::seal_approve`,
+    arguments: [
+      tx.pure.vector("u8", fromHex(id)),
+      tx.object(shareId),
+      tx.object(SUI_CLOCK_OBJECT_ID),
     ],
   });
   return tx;

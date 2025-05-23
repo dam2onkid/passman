@@ -200,7 +200,7 @@ export function ItemFormModal({
                       name={field.name}
                       value={formData[field.name] || ""}
                       onChange={handleInputChange}
-                      className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      className="w-full min-h-[100px] max-h-[200px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none overflow-hidden"
                       placeholder={field.placeholder}
                     />
                   ) : field.type === "password" ? (

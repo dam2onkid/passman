@@ -17,6 +17,7 @@ import {
   Trash2,
   Loader2,
   Pencil,
+  Link,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -59,7 +61,11 @@ import { deleteShareMoveCallTx } from "@/lib/construct-move-call";
 import { UpdateShareModal } from "@/components/update-share-modal";
 
 // Share item type definition
-export const shareItemColumns = (handleDeleteClick, handleUpdateClick) => [
+export const shareItemColumns = (
+  handleDeleteClick,
+  handleUpdateClick,
+  handleCopyShareLink
+) => [
   {
     accessorKey: "id",
     header: ({ column }) => {
@@ -235,7 +241,9 @@ export const shareItemColumns = (handleDeleteClick, handleUpdateClick) => [
     enableHiding: false,
     cell: ({ row }) => {
       const isExpired = row.getValue("isExpired");
+      const shareId = row.getValue("id");
       const shareItem = row.original;
+      const vaultId = shareItem.vault_id;
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -246,6 +254,15 @@ export const shareItemColumns = (handleDeleteClick, handleUpdateClick) => [
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              disabled={isExpired}
+              onClick={() => handleCopyShareLink(shareId, vaultId)}
+            >
+              <Link className="mr-2 h-4 w-4" />
+              Copy share link
+            </DropdownMenuItem>
+
             <DropdownMenuItem
               disabled={isExpired}
               onClick={() => handleUpdateClick(shareItem)}
@@ -297,6 +314,13 @@ function ShareDataTable({ columns, data = [], isLoading, onShareDeleted }) {
     onShareDeleted && onShareDeleted(updatedShareId);
   };
 
+  const handleCopyShareLink = (shareId, vaultId) => {
+    navigator.clipboard.writeText(
+      `${window.location.origin}/share/${shareId}?vault_id=${vaultId}`
+    );
+    toast.success("Share link copied to clipboard");
+  };
+
   const handleDeleteConfirm = async () => {
     if (!shareToDelete?.capId || !shareToDelete?.id) {
       toast.error("Missing required data for deletion");
@@ -336,7 +360,11 @@ function ShareDataTable({ columns, data = [], isLoading, onShareDeleted }) {
     }
   };
 
-  const columnsArray = columns(handleDeleteClick, handleUpdateClick);
+  const columnsArray = columns(
+    handleDeleteClick,
+    handleUpdateClick,
+    handleCopyShareLink
+  );
 
   const table = useReactTable({
     data,
@@ -528,9 +556,7 @@ export default function ShareList() {
   const { items, loading, error, refetch } = useFetchShareItems(vaultId);
 
   useEffect(() => {
-    if (isConnected && vaultId) {
-      refetch();
-    }
+    refetch();
   }, [isConnected, vaultId]);
 
   const handleShareDeleted = (deletedShareId) => {

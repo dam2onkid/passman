@@ -93,11 +93,6 @@ export const useSealDecrypt = ({ packageId, ttlMin = 10 } = {}) => {
         ttlMin,
       });
 
-      console.log("new-sessionKey", {
-        isExpired: newSessionKey.isExpired(),
-        getAddress: newSessionKey.getAddress(),
-      });
-
       return new Promise((resolve, reject) => {
         signPersonalMessage(
           { message: newSessionKey.getPersonalMessage() },

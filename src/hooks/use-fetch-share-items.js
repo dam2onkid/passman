@@ -42,6 +42,7 @@ export default function useFetchShareItems(vaultId) {
           options: { showContent: true },
         });
         const _item = itemRes?.data?.content?.fields;
+
         return {
           ...share,
           id: share?.id?.id,
@@ -52,11 +53,9 @@ export default function useFetchShareItems(vaultId) {
       });
 
       const processedItems = await Promise.all(promiseItems);
-      console.log(processedItems);
 
       setItems(processedItems);
     } catch (err) {
-      console.log(err);
       setError(err.message || "Failed to fetch shared items");
     } finally {
       setLoading(false);
