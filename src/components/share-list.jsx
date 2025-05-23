@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ColumnDef,
   flexRender,
@@ -10,7 +10,14 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal, Copy, Trash2, Eye } from "lucide-react";
+import {
+  ArrowUpDown,
+  MoreHorizontal,
+  Copy,
+  Trash2,
+  Eye,
+  Loader2,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -32,11 +39,13 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import useFetchShareItems from "@/hooks/use-fetch-share-items";
+import useActiveVault from "@/hooks/use-active-vault";
+import { useSuiWallet } from "@/hooks/use-sui-wallet";
 
 // Share item type definition
 export const shareItemColumns = [
   {
-    accessorKey: "id.id",
+    accessorKey: "id",
     header: ({ column }) => {
       return (
         <Button
@@ -50,7 +59,7 @@ export const shareItemColumns = [
       );
     },
     cell: ({ row }) => {
-      const shareId = row.getValue("id.id");
+      const shareId = row.getValue("id");
       const truncatedId = shareId
         ? `${shareId.slice(0, 8)}...${shareId.slice(-8)}`
         : "N/A";
@@ -73,7 +82,7 @@ export const shareItemColumns = [
     },
   },
   {
-    accessorKey: "item_id",
+    accessorKey: "itemName",
     header: ({ column }) => {
       return (
         <Button
@@ -81,26 +90,23 @@ export const shareItemColumns = [
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           className="h-8 px-2"
         >
-          Item ID
+          Item Name
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
     },
     cell: ({ row }) => {
-      const itemId = row.getValue("item_id");
-      const truncatedId = itemId
-        ? `${itemId.slice(0, 8)}...${itemId.slice(-8)}`
-        : "N/A";
+      const itemName = row.getValue("itemName");
 
       return (
         <div className="flex items-center space-x-2">
           <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm">
-            {truncatedId}
+            {itemName}
           </code>
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigator.clipboard.writeText(itemId)}
+            onClick={() => navigator.clipboard.writeText(itemName)}
             className="h-6 w-6 p-0"
           >
             <Copy className="h-3 w-3" />
@@ -228,7 +234,7 @@ export const shareItemColumns = [
   },
 ];
 
-function ShareDataTable({ columns, data = sampleShares }) {
+function ShareDataTable({ columns, data = sampleShares, isLoading }) {
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState({});
@@ -275,52 +281,72 @@ function ShareDataTable({ columns, data = sampleShares }) {
       </div>
       <div className="rounded-md border">
         <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
+          {isLoading ? (
+            <TableBody>
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No shares found.
+                  <div className="flex items-center justify-center space-x-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    <span className="text-muted-foreground">
+                      Loading shares...
+                    </span>
+                  </div>
                 </TableCell>
               </TableRow>
-            )}
-          </TableBody>
+            </TableBody>
+          ) : (
+            <>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => {
+                      return (
+                        <TableHead key={header.id}>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                        </TableHead>
+                      );
+                    })}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && "selected"}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center"
+                    >
+                      No shares found.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </>
+          )}
         </Table>
       </div>
       <div className="flex items-center justify-end space-x-2 py-4">
@@ -352,14 +378,15 @@ function ShareDataTable({ columns, data = sampleShares }) {
 }
 
 export default function ShareList() {
-  const { items, loading, error, refetch } = useFetchShareItems();
+  const { vaultId } = useActiveVault();
+  const { isConnected } = useSuiWallet();
+  const { items, loading, error, refetch } = useFetchShareItems(vaultId);
 
-  // useEffect(() => {
-  //   const fetchShares = async () => {
-  //     const shares = await getShares();
-  //     setShares(shares);
-  //   };
-  // }, []);
+  useEffect(() => {
+    if (isConnected && vaultId) {
+      refetch();
+    }
+  }, [isConnected, vaultId]);
 
   return (
     <div className="container mx-auto py-6">
@@ -369,7 +396,11 @@ export default function ShareList() {
           Manage and monitor your shared password items.
         </p>
       </div>
-      <ShareDataTable columns={shareItemColumns} data={items} />
+      <ShareDataTable
+        columns={shareItemColumns}
+        data={items}
+        isLoading={loading}
+      />
     </div>
   );
 }

@@ -2,45 +2,55 @@ import { useState, useEffect } from "react";
 import { get } from "lodash-es";
 
 import { useSuiWallet } from "./use-sui-wallet";
+import { useNetworkVariable } from "@/lib/network-config";
 
 export default function useFetchShareItems(vaultId) {
-  const { currentAccount, client: suiClient } = useSuiWallet();
+  const { client: suiClient, currentAccount } = useSuiWallet();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const packageId = useNetworkVariable("passman");
 
   async function fetchShares() {
-    if (!currentAccount?.address) {
+    if (!vaultId || !currentAccount?.address) {
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      const shareRes = await suiClient.getOwnedObjects({
-        owner: currentAccount.address,
+      // Fetch Cap objects
+      const capRes = await suiClient.getOwnedObjects({
+        owner: currentAccount?.address,
         options: {
           showContent: true,
         },
         filter: {
-          StructType: `${packageId}::share::Share`,
+          StructType: `${packageId}::share::Cap`,
         },
       });
-      console.log(shareRes);
 
-      // const promiseItems = get(vault, "data.content.fields.items", []).map(
-      //   async (itemId) => {
-      //     const item = await suiClient.getObject({
-      //       id: itemId,
-      //       options: { showContent: true },
-      //     });
-      //     const fields = item?.data?.content?.fields;
-      //     return fields;
-      //   }
-      // );
-      // const processedItems = await Promise.all(promiseItems);
-      setItems(shareRes.data);
+      const promiseItems = get(capRes, "data", []).map(async (item) => {
+        const cap = item?.data?.content?.fields;
+        const shareRes = await suiClient.getObject({
+          id: cap.share_id,
+          options: { showContent: true },
+        });
+        const share = shareRes?.data?.content?.fields;
+        const itemRes = await suiClient.getObject({
+          id: share.item_id,
+          options: { showContent: true },
+        });
+        const _item = itemRes?.data?.content?.fields;
+        return { ...share, id: share?.id?.id, cap, itemName: _item.name };
+      });
+
+      const processedItems = await Promise.all(promiseItems);
+      console.log(processedItems);
+
+      setItems(processedItems);
     } catch (err) {
+      console.log(err);
       setError(err.message || "Failed to fetch shared items");
     } finally {
       setLoading(false);
@@ -49,7 +59,7 @@ export default function useFetchShareItems(vaultId) {
 
   useEffect(() => {
     fetchShares();
-  }, [currentAccount?.address, suiClient]);
+  }, []);
 
   return { items, loading, error, refetch: fetchShares };
 }

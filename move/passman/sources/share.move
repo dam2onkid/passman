@@ -19,6 +19,11 @@ public struct Share has key {
     ttl: u64
 }
 
+public struct Cap has key {
+    id: UID,
+    share_id: ID
+}
+
 // === Event ===
 public struct ShareCreated has copy, drop  {
     item_id: ID,
@@ -27,7 +32,7 @@ public struct ShareCreated has copy, drop  {
     ttl: u64
 }
 
-fun share_item(vault: &Vault, item: &Item, recipients: vector<address>, created_at: u64, ttl: u64, ctx: &mut TxContext): Share {
+fun share_item(vault: &Vault, item: &Item, recipients: vector<address>, created_at: u64, ttl: u64, ctx: &mut TxContext): (Share,Cap) {
     assert!(object::id(vault) != object::id(item), ENotOwner);
     let share = Share {
         id: object::new(ctx),
@@ -37,31 +42,33 @@ fun share_item(vault: &Vault, item: &Item, recipients: vector<address>, created_
         created_at,
         ttl
     };
-    share
+    let cap = Cap {id: object::new(ctx), share_id: object::id(&share)};
+   (share, cap)
 }
 
 
-public fun update_share_item(vault: &Vault, share: &mut Share, recipients: vector<address>, ttl: u64) {
-    assert!(object::id(vault) == share.vault_id);
+public fun update_share_item(cap: &Cap, share: &mut Share, recipients: vector<address>, ttl: u64) {
+    assert!(object::id(share) == cap.share_id);
     share.ttl = ttl;
     share.recipients = recipients
 }
 
-public fun delete_share_item(vault: &Vault, share: Share) {
-    assert!(object::id(vault) == share.vault_id);
+public fun delete_share_item(cap: &Cap, share: Share) {
+    assert!(object::id(&share) == cap.share_id);
     let Share { id, .. } = share;
     object::delete(id);
 }
 
 public entry fun share_item_entry(vault: &Vault, item: &Item, recipients: vector<address>, created_at: u64, ttl: u64, ctx: &mut TxContext) {
-    let share = share_item(vault, item, recipients, created_at, ttl, ctx);
+    let (share, cap) = share_item(vault, item, recipients, created_at, ttl, ctx);
     event::emit(ShareCreated {
         item_id: object::id(item),
         recipients: share.recipients,
         created_at: share.created_at,
         ttl: share.ttl
     });
-    transfer::share_object(share)
+    transfer::share_object(share);
+    transfer::transfer(cap, ctx.sender())
 }
 
 // [pkg-id][vault-id][nonce]
