@@ -15,15 +15,8 @@ public struct Share has key {
     vault_id: ID,
     item_id: ID,
     recipients: vector<address>,
-    consumed: bool,
-    one_time_access: bool,
     created_at: u64,
     ttl: u64
-}
-
-public struct Cap has key {
-    id: UID,
-    share_id: ID
 }
 
 // === Event ===
@@ -34,38 +27,46 @@ public struct ShareCreated has copy, drop  {
     ttl: u64
 }
 
-fun share_item(vault: &Vault, item: &Item, recipients: vector<address>, created_at: u64, ttl: u64, one_time_access: bool, ctx: &mut TxContext): (Share, Cap) {
+fun share_item(vault: &Vault, item: &Item, recipients: vector<address>, created_at: u64, ttl: u64, ctx: &mut TxContext): Share {
     assert!(object::id(vault) != object::id(item), ENotOwner);
     let share = Share {
         id: object::new(ctx),
         item_id: object::id(item),
         vault_id: object::id(vault),
         recipients,
-        one_time_access,
-        consumed: false,
         created_at,
         ttl
     };
-    let cap = Cap {id: object::new(ctx), share_id: object::id(&share)};
-    (share, cap)
+    share
 }
 
-public entry fun share_item_entry(vault: &Vault, item: &Item, recipients: vector<address>, created_at: u64, ttl: u64, one_time_access: bool, ctx: &mut TxContext) {
-    let (share, cap) = share_item(vault, item, recipients, created_at, ttl, one_time_access, ctx);
+
+public fun update_share_item(vault: &Vault, share: &mut Share, recipients: vector<address>, ttl: u64) {
+    assert!(object::id(vault) == share.vault_id);
+    share.ttl = ttl;
+    share.recipients = recipients
+}
+
+public fun delete_share_item(vault: &Vault, share: Share) {
+    assert!(object::id(vault) == share.vault_id);
+    let Share { id, .. } = share;
+    object::delete(id);
+}
+
+public entry fun share_item_entry(vault: &Vault, item: &Item, recipients: vector<address>, created_at: u64, ttl: u64, ctx: &mut TxContext) {
+    let share = share_item(vault, item, recipients, created_at, ttl, ctx);
     event::emit(ShareCreated {
         item_id: object::id(item),
         recipients: share.recipients,
         created_at: share.created_at,
         ttl: share.ttl
     });
-    transfer::transfer(cap, ctx.sender());
     transfer::share_object(share)
 }
 
 // [pkg-id][vault-id][nonce]
 fun check_policy(id: vector<u8>, share: &Share, caller: address, c: &Clock): bool {
     if(!share.recipients.contains(&caller)) return false;
-    if(share.one_time_access && share.consumed) return false;
     if(c.timestamp_ms() > share.created_at + share.ttl ) return false ;
 
     let namespace = share.vault_id.to_bytes();

@@ -1,4 +1,4 @@
-import { AppSidebar } from "@/components/app-sidebar";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -6,8 +6,7 @@ import {
   BreadcrumbPage,
 } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { PasswordManager } from "@/components/password-manager";
+import ShareList from "@/components/share-list";
 
 export default function Page() {
   return (
@@ -28,8 +27,8 @@ export default function Page() {
           </Breadcrumb>
         </div>
       </header>
-      <div className="flex flex-1 flex-col h-[calc(100vh-4rem)]">
-        <PasswordManager />
+      <div className="flex flex-1 flex-col h-[calc(100vh-4rem)] px-4">
+        <ShareList />
       </div>
     </>
   );

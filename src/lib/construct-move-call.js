@@ -74,3 +74,22 @@ export function ownerSealApproveMoveCallTx(args = {}) {
   });
   return tx;
 }
+
+// Share
+export function shareItemMoveCallTx(args = {}, gasBudget = GAS_BUDGET) {
+  const { vaultId, itemId, createdAt, ttl, walletAddresses } = args;
+  const tx = new Transaction();
+
+  tx.moveCall({
+    target: `${PACKAGE_ID}::share::share_item_entry`,
+    arguments: [
+      tx.object(vaultId),
+      tx.object(itemId),
+      tx.pure.vector("address", walletAddresses),
+      tx.pure.u64(createdAt),
+      tx.pure.u64(ttl),
+    ],
+  });
+  tx.setGasBudget(gasBudget);
+  return tx;
+}

@@ -41,6 +41,7 @@ import {
 } from "@/lib/construct-move-call";
 import { ITEM_TYPE_DATA, getItemIcon } from "@/constants/source-type";
 import { PasswordGenerator } from "@/components/password-generator";
+import { ShareModal } from "@/components/share-modal";
 
 export function PasswordDetail({ entry, onItemDeleted }) {
   const { encryptData } = useSealEncrypt();
@@ -56,6 +57,7 @@ export function PasswordDetail({ entry, onItemDeleted }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showPasswordGenerator, setShowPasswordGenerator] = useState(false);
   const [activePasswordField, setActivePasswordField] = useState(null);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const { vaultId, capId } = useActiveVault();
   const packageId = useNetworkVariable("passman");
@@ -249,6 +251,10 @@ export function PasswordDetail({ entry, onItemDeleted }) {
     }
     decryptItem();
   }, [entry]);
+
+  const handleShareClick = () => {
+    setShowShareModal(true);
+  };
 
   const renderFormFields = () => {
     if (!entry?.category) return null;
@@ -447,7 +453,7 @@ export function PasswordDetail({ entry, onItemDeleted }) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleShareClick}>
                   <Share className="h-4 w-4 mr-2" />
                   Share
                 </DropdownMenuItem>
@@ -552,6 +558,15 @@ export function PasswordDetail({ entry, onItemDeleted }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Share Dialog */}
+      {showShareModal && (
+        <ShareModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          entry={entry}
+        />
+      )}
 
       {/* Password Generator Dialog */}
       {showPasswordGenerator && (

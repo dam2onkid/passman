@@ -46,11 +46,6 @@ const data = {
       url: "/dashboard/share",
       icon: Star,
     },
-    {
-      title: "Watchtower",
-      url: "/dashboard/watchtower",
-      icon: GalleryVerticalEnd,
-    },
   ],
   categories: [
     {
