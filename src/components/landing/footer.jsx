@@ -107,31 +107,24 @@ export function Footer() {
         {/* Bottom Section */}
         <div className="mt-12 pt-8 border-t flex flex-col sm:flex-row justify-between items-center">
           <p className="text-muted-foreground text-sm">
-            © 2024 Passman. All rights reserved.
+            © 2025 Passman. All rights reserved.
           </p>
 
           {/* Social Links */}
           <div className="flex items-center space-x-4 mt-4 sm:mt-0">
             <Link
-              href="https://github.com"
+              href="https://github.com/dam2onkid/passman"
               className="text-muted-foreground hover:text-foreground transition-colors"
               aria-label="GitHub"
             >
               <Github className="h-5 w-5" />
             </Link>
             <Link
-              href="https://twitter.com"
+              href="https://x.com/Dam2onkid"
               className="text-muted-foreground hover:text-foreground transition-colors"
               aria-label="Twitter"
             >
               <Twitter className="h-5 w-5" />
-            </Link>
-            <Link
-              href="https://discord.com"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-              aria-label="Discord"
-            >
-              <MessageCircle className="h-5 w-5" />
             </Link>
           </div>
         </div>

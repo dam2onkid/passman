@@ -35,7 +35,10 @@ export function CallToAction() {
               size="lg"
               className="w-full sm:w-auto text-lg px-8 py-6"
             >
-              <Link href="#docs" className="flex items-center gap-2">
+              <Link
+                href="https://github.com/dam2onkid/passman"
+                className="flex items-center gap-2"
+              >
                 <BookOpen className="h-5 w-5" />
                 View Documentation
               </Link>
