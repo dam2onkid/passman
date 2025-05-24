@@ -1,6 +1,8 @@
 <div align="center">
   <img src="public/passman.svg" alt="Passman Logo" width="128" height="128">
 
+[![Watch Demo](https://img.shields.io/badge/Watch-Demo-red?style=flat-square&logo=youtube)](https://www.youtube.com/watch?v=HCZa7gmznTI)
+
 # Passman
 
 **The First Blockchain-Powered Password Manager**
