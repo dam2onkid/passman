@@ -1,4 +1,4 @@
-import { PACKAGE_ID } from "@/constants/config";
+import { PACKAGE_ID, NETWORK } from "@/constants/config";
 import { createNetworkConfig } from "@mysten/dapp-kit";
 import { getFullnodeUrl } from "@mysten/sui/client";
 
@@ -19,8 +19,7 @@ const { networkConfig, useNetworkVariable, useNetworkVariables } =
       },
     },
   });
-
-const DEFAULT_NETWORK = "testnet";
+const DEFAULT_NETWORK = NETWORK;
 
 export {
   useNetworkVariable,
