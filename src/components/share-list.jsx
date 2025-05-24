@@ -6,7 +6,6 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
@@ -285,7 +284,15 @@ export const shareItemColumns = (
   },
 ];
 
-function ShareDataTable({ columns, data = [], isLoading, onShareDeleted }) {
+function ShareDataTable({
+  columns,
+  data = [],
+  isLoading,
+  onShareDeleted,
+  pagination,
+  onNextPage,
+  onPreviousPage,
+}) {
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState({});
@@ -372,13 +379,13 @@ function ShareDataTable({ columns, data = [], isLoading, onShareDeleted }) {
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
     globalFilterFn: "includesString",
+    manualPagination: true,
     state: {
       sorting,
       columnFilters,
@@ -476,23 +483,23 @@ function ShareDataTable({ columns, data = [], isLoading, onShareDeleted }) {
       </div>
       <div className="flex items-center justify-end space-x-2 py-4">
         <div className="flex-1 text-sm text-muted-foreground">
-          Page {table.getState().pagination.pageIndex + 1} of{" "}
-          {table.getPageCount()}
+          Page {pagination.currentPage + 1}
+          {pagination.hasNextPage && " of many"}
         </div>
         <div className="space-x-2">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
+            onClick={onPreviousPage}
+            disabled={!pagination.hasPreviousPage || isLoading}
           >
             Previous
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
+            onClick={onNextPage}
+            disabled={!pagination.hasNextPage || isLoading}
           >
             Next
           </Button>
@@ -553,14 +560,26 @@ function ShareDataTable({ columns, data = [], isLoading, onShareDeleted }) {
 export default function ShareList() {
   const { vaultId } = useActiveVault();
   const { isConnected } = useSuiWallet();
-  const { items, loading, error, refetch } = useFetchShareItems(vaultId);
+  const {
+    items,
+    loading,
+    error,
+    pagination,
+    refetch,
+    goToNextPage,
+    goToPreviousPage,
+  } = useFetchShareItems(vaultId);
 
   useEffect(() => {
     refetch();
   }, [isConnected, vaultId]);
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error]);
 
   const handleShareDeleted = (deletedShareId) => {
-    // Refetch the shares to update the list
     refetch();
   };
 
@@ -577,6 +596,9 @@ export default function ShareList() {
         data={items}
         isLoading={loading}
         onShareDeleted={handleShareDeleted}
+        pagination={pagination}
+        onNextPage={goToNextPage}
+        onPreviousPage={goToPreviousPage}
       />
     </div>
   );
