@@ -93,7 +93,10 @@ export const shareItemColumns = (
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigator.clipboard.writeText(shareId)}
+            onClick={() => {
+              navigator.clipboard.writeText(shareId);
+              toast.success("Share ID copied to clipboard");
+            }}
             className="h-6 w-6 p-0"
           >
             <Copy className="h-3 w-3" />
@@ -127,7 +130,10 @@ export const shareItemColumns = (
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigator.clipboard.writeText(itemName)}
+            onClick={() => {
+              navigator.clipboard.writeText(itemName);
+              toast.success("Item name copied to clipboard");
+            }}
             className="h-6 w-6 p-0"
           >
             <Copy className="h-3 w-3" />
