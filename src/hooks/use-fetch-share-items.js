@@ -60,13 +60,13 @@ export default function useFetchShareItems(vaultId) {
           options: { showContent: true },
         });
         const _item = itemRes?.data?.content?.fields;
-
         return {
           ...share,
           id: share?.id?.id,
           capId: cap?.id?.id,
           itemName: _item.name,
-          isExpired: Date.now() > share.created_at + share.ttl,
+          isExpired:
+            Date.now() > parseInt(share.created_at) + parseInt(share.ttl),
         };
       });
 
