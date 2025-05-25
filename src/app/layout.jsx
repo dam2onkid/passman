@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SuiProviders } from "@/lib/sui-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { Analytics } from "@vercel/analytics/next";
 
 import "./globals.css";
 
@@ -37,6 +38,7 @@ export default function RootLayout({ children }) {
           <Toaster />
           <SuiProviders>{children}</SuiProviders>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
