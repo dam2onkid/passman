@@ -589,6 +589,17 @@ export default function ShareList() {
     refetch();
   };
 
+  if (!isConnected) {
+    return (
+      <div className="flex h-full items-center justify-center p-8 text-center">
+        <div className="max-w-xs space-y-1">
+          <p className="text-sm font-medium">
+            Please connect your wallet to continue
+          </p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="container mx-auto py-6">
       <div className="mb-6">

@@ -34,7 +34,7 @@ import { createVaultMoveCallTx } from "@/lib/construct-move-call";
 
 export function VaultSwitcher() {
   const { isMobile } = useSidebar();
-  const { signAndExecuteTransaction, client } = useSuiWallet();
+  const { signAndExecuteTransaction, client, isConnected } = useSuiWallet();
   const [isAddVaultModalOpen, setIsAddVaultModalOpen] = React.useState(false);
   const [isCreatingVault, setIsCreatingVault] = React.useState(false);
   const { activeVaultCapPair, setActiveVaultCapPair } = useVaultStore();
@@ -136,42 +136,44 @@ export function VaultSwitcher() {
                 <ChevronsUpDown className="ml-auto" />
               </SidebarMenuButton>
             </DropdownMenuTrigger>
-            <DropdownMenuContent
-              className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-              align="start"
-              side={isMobile ? "bottom" : "right"}
-              sideOffset={4}
-            >
-              <DropdownMenuLabel className="text-muted-foreground text-xs">
-                Vaults
-              </DropdownMenuLabel>
-              {filteredVaultCapPairs.map(({ vault, cap }, index) => (
-                <DropdownMenuItem
-                  key={vault.name}
-                  onClick={() => setActiveVaultCapPair({ vault, cap })}
-                  className="gap-2 p-2"
-                >
-                  <div className="flex size-6 items-center justify-center rounded-md border">
-                    <p className="text-xs font-bold text-white">
-                      {vault.name.charAt(0)}
-                    </p>
-                  </div>
-                  {vault.name}
-                </DropdownMenuItem>
-              ))}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="gap-2 p-2"
-                onClick={() => setIsAddVaultModalOpen(true)}
+            {isConnected && (
+              <DropdownMenuContent
+                className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+                align="start"
+                side={isMobile ? "bottom" : "right"}
+                sideOffset={4}
               >
-                <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
-                  <Plus className="size-4" />
-                </div>
-                <div className="text-muted-foreground font-medium">
-                  Add vault
-                </div>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
+                <DropdownMenuLabel className="text-muted-foreground text-xs">
+                  Vaults
+                </DropdownMenuLabel>
+                {filteredVaultCapPairs.map(({ vault, cap }, index) => (
+                  <DropdownMenuItem
+                    key={vault.name}
+                    onClick={() => setActiveVaultCapPair({ vault, cap })}
+                    className="gap-2 p-2"
+                  >
+                    <div className="flex size-6 items-center justify-center rounded-md border">
+                      <p className="text-xs font-bold text-white">
+                        {vault.name.charAt(0)}
+                      </p>
+                    </div>
+                    {vault.name}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="gap-2 p-2"
+                  onClick={() => setIsAddVaultModalOpen(true)}
+                >
+                  <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
+                    <Plus className="size-4" />
+                  </div>
+                  <div className="text-muted-foreground font-medium">
+                    Add vault
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            )}
           </DropdownMenu>
         </SidebarMenuItem>
       </SidebarMenu>

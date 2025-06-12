@@ -8,14 +8,12 @@ const { networkConfig, useNetworkVariable, useNetworkVariables } =
       url: getFullnodeUrl("testnet"),
       variables: {
         passman: PACKAGE_ID,
-        gqlClient: "https://sui-testnet.mystenlabs.com/graphql",
       },
     },
     mainnet: {
       url: getFullnodeUrl("mainnet"),
       variables: {
         passman: PACKAGE_ID,
-        gqlClient: "https://sui-mainnet.mystenlabs.com/graphql",
       },
     },
   });

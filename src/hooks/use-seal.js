@@ -19,14 +19,20 @@ export const useSealEncrypt = ({ verifyKeyServers = false } = {}) => {
   const [error, setError] = useState(null);
   const { client: suiClient } = useSuiWallet();
 
-  const encryptData = async ({ threshold = 1, packageId, id, data }) => {
+  const encryptData = async (
+    { threshold = 1, packageId, id, data },
+    retryCount = 0
+  ) => {
     setLoading(true);
     setError(null);
 
     try {
       const client = new SealClient({
         suiClient,
-        serverObjectIds: getAllowlistedKeyServers(DEFAULT_NETWORK),
+        serverConfigs: getAllowlistedKeyServers(DEFAULT_NETWORK).map((id) => ({
+          objectId: id,
+          weight: 1,
+        })),
         verifyKeyServers,
       });
 
@@ -57,7 +63,10 @@ export const useSealDecrypt = ({ packageId, ttlMin = 10 } = {}) => {
   const { client: suiClient } = useSuiWallet();
   const sealClient = new SealClient({
     suiClient,
-    serverObjectIds: getAllowlistedKeyServers(DEFAULT_NETWORK),
+    serverConfigs: getAllowlistedKeyServers(DEFAULT_NETWORK).map((id) => ({
+      objectId: id,
+      weight: 1,
+    })),
     verifyKeyServers: false,
   });
 
@@ -74,9 +83,13 @@ export const useSealDecrypt = ({ packageId, ttlMin = 10 } = {}) => {
 
   const decryptData = async ({ encryptedObject, txBytes, retry = false }) => {
     if (!account.address) return null;
+
     try {
       if (isValidSessionKey(exportedSessionKey)) {
-        const sessionKey = await SessionKey.import(exportedSessionKey, {});
+        const sessionKey = await SessionKey.import(
+          exportedSessionKey,
+          suiClient
+        );
         const decrypted = await sealClient.decrypt({
           data: encryptedObject,
           sessionKey,
@@ -87,10 +100,11 @@ export const useSealDecrypt = ({ packageId, ttlMin = 10 } = {}) => {
 
       // New session key
       setExportedSessionKey(null);
-      const newSessionKey = new SessionKey({
+      const newSessionKey = await SessionKey.create({
         address: account.address,
         packageId,
         ttlMin,
+        suiClient,
       });
 
       return new Promise((resolve, reject) => {
@@ -111,10 +125,12 @@ export const useSealDecrypt = ({ packageId, ttlMin = 10 } = {}) => {
 
                 resolve(decrypted);
               } catch (error) {
+                console.error("Decryption error in success handler:", error);
                 reject(error);
               }
             },
             onError: (err) => {
+              console.error("Personal message signing error:", err);
               reject(err);
             },
           }

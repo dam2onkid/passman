@@ -132,6 +132,13 @@ export function PasswordDetail({ entry, onItemDeleted }) {
           id,
           data: dataBuffer,
         });
+
+        if (!encryptedObject) {
+          toast.error("Failed to encrypt data");
+          setIsSaving(false);
+          return;
+        }
+
         const tx = editItemMoveCallTx({
           capId,
           name: formData.itemName,
