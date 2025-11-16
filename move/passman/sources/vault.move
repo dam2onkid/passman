@@ -7,6 +7,7 @@ use passman::utils::{ is_prefix };
 // === Error ===
 const ENotOwner: u64 = 1;
 const ENoAccess: u64 = 2;
+const ENotAuthorized: u64 = 3;
 
 // === Struct ===
 public struct Item has key {
@@ -61,7 +62,7 @@ fun create_vault(name: String, ctx: &mut TxContext): (Vault, Cap) {
 }
 
 fun create_item(cap: &Cap, name: String, category: String, vault: &mut Vault, nonce: vector<u8>, data: vector<u8>, ctx: &mut TxContext): Item {
-    assert!(cap.vault_id == object::id(vault), ENotOwner);
+    assert!(cap.vault_id == object::id(vault), ENotAuthorized);
     let item = Item {
         id: object::new(ctx),
         name,
@@ -83,9 +84,14 @@ entry fun update_item(cap: &Cap, name: String, data: vector<u8>, item: &mut Item
 }
 
 entry fun delete_item(cap: &Cap, vault: &mut Vault, item: Item) {
-    assert!(cap.vault_id == item.vault_id, ENotOwner);
-    event::emit(ItemDeleted { item_id: object::id(&item), vault_id: item.vault_id, name: item.name });
-    vault.items = vault.items.filter!(|x| x != object::id(&item) ) ;
+    assert!(cap.vault_id == item.vault_id, ENotAuthorized);
+    let item_id = object::id(&item);
+    event::emit(ItemDeleted { item_id, vault_id: item.vault_id, name: item.name });
+
+    let (found, idx) = vault.items.index_of(&item_id);
+    assert!(found, ENotOwner);
+    vault.items.swap_remove(idx);
+
     let Item { id, .. } = item;
     object::delete(id)
 }
