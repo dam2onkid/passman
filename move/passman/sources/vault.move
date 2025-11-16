@@ -16,7 +16,7 @@ public struct Item has key {
     category: String,
     vault_id: ID,
     nonce: vector<u8>,
-    data: vector<u8>,
+    walrus_blob_id: String,
 }
 
 public struct Vault has key {
@@ -61,7 +61,7 @@ fun create_vault(name: String, ctx: &mut TxContext): (Vault, Cap) {
     (vault, cap)
 }
 
-fun create_item(cap: &Cap, name: String, category: String, vault: &mut Vault, nonce: vector<u8>, data: vector<u8>, ctx: &mut TxContext): Item {
+fun create_item(cap: &Cap, name: String, category: String, vault: &mut Vault, nonce: vector<u8>, walrus_blob_id: String, ctx: &mut TxContext): Item {
     assert!(cap.vault_id == object::id(vault), ENotAuthorized);
     let item = Item {
         id: object::new(ctx),
@@ -69,16 +69,16 @@ fun create_item(cap: &Cap, name: String, category: String, vault: &mut Vault, no
         category,
         vault_id: object::id(vault),
         nonce,
-        data,
+        walrus_blob_id,
     };
     vault.items.push_back(object::id(&item));
     item
 }
 
-entry fun update_item(cap: &Cap, name: String, data: vector<u8>, item: &mut Item) {
+entry fun update_item(cap: &Cap, name: String, walrus_blob_id: String, item: &mut Item) {
     assert!(cap.vault_id == item.vault_id, ENotOwner);
     item.name = name;
-    item.data = data;
+    item.walrus_blob_id = walrus_blob_id;
 
     event::emit(ItemUpdated { item_id: object::id(item), vault_id: item.vault_id });
 }
@@ -104,14 +104,14 @@ entry fun create_vault_entry(name: String, ctx: &mut TxContext) {
     transfer::transfer(vault,  ctx.sender())
 }
 
-entry fun create_item_entry(cap: &Cap, name: String, category: String, vault: &mut Vault, nonce: vector<u8>, data: vector<u8>, ctx: &mut TxContext) {
+entry fun create_item_entry(cap: &Cap, name: String, category: String, vault: &mut Vault, nonce: vector<u8>, walrus_blob_id: String, ctx: &mut TxContext) {
     let item = create_item(
         cap,
         name,
         category,
         vault,
         nonce,
-        data,
+        walrus_blob_id,
         ctx
         );
     event::emit(ItemCreated { item_id: object::id(&item), vault_id: item.vault_id, name, category});
@@ -123,6 +123,10 @@ fun check_policy(id: vector<u8>, vault: &Vault, item: &Item): bool {
     let mut namespace = object::id(vault).to_bytes();
     namespace.append(item.nonce);
     is_prefix(namespace, id)
+}
+
+public fun item_vault_id(item: &Item): ID {
+    item.vault_id
 }
 
 // [pkg-id][vault-id][nonce]
@@ -162,7 +166,7 @@ fun new_item_for_testing(): Item {
         utf8(b"wallet"),
         &mut _vault,
         vector::empty(),
-        vector::empty(),
+        utf8(b"test_blob_id"),
         ctx
     );
     let mut id = vector::empty();

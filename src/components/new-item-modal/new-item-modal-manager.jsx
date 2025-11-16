@@ -12,11 +12,12 @@ import { useSuiWallet } from "@/hooks/use-sui-wallet";
 import { useNetworkVariable } from "@/lib/network-config";
 import useActiveVault from "@/hooks/use-active-vault";
 import { createItemMoveCallTx } from "@/lib/construct-move-call";
+import { uploadToWalrus } from "@/lib/walrus-client";
 
 export function NewItemModalManager({ onNewItemCreated }) {
   const [isCreatingItem, setIsCreatingItem] = React.useState(false);
   const { modalState, closeModal, openItemForm, openModal } = useNewItemModal();
-  const { signAndExecuteTransaction, client } = useSuiWallet();
+  const { signAndExecuteTransaction, client, walletAddress } = useSuiWallet();
   const packageId = useNetworkVariable("passman");
   const { vaultId, capId } = useActiveVault();
   const { encryptData } = useSealEncrypt();
@@ -40,13 +41,28 @@ export function NewItemModalManager({ onNewItemCreated }) {
         return;
       }
 
+      const { blob_id } = await uploadToWalrus({
+        encryptedData: encryptedObject,
+        signAndExecuteTransaction,
+        owner: walletAddress,
+        client,
+        epochs: 3,
+      });
+
+      if (!blob_id) {
+        toast.error("Failed to upload to Walrus");
+        setIsCreatingItem(false);
+        return;
+      }
+      console.log("blob_id", blob_id);
+
       const tx = createItemMoveCallTx({
         vaultId,
         capId,
         name,
         itemType,
         nonce,
-        encryptedObject,
+        walrusBlobId: blob_id,
       });
 
       signAndExecuteTransaction(

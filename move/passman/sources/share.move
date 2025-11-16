@@ -9,6 +9,7 @@ use passman::utils::{ is_prefix };
 const ENotOwner: u64 = 1;
 const ENoAccess: u64 = 2;
 const ENotAuthorized: u64 = 3;
+#[allow(unused_const)]
 const EExpired: u64 = 4;
 
 // === Constants ===
@@ -38,7 +39,7 @@ public struct ShareCreated has copy, drop  {
 }
 
 fun share_item(vault: &Vault, item: &Item, recipients: vector<address>, created_at: u64, ttl: u64, ctx: &mut TxContext): (Share,Cap) {
-    assert!(object::id(vault) == item.vault_id, ENotOwner);
+    assert!(object::id(vault) == passman::vault::item_vault_id(item), ENotOwner);
     let share = Share {
         id: object::new(ctx),
         item_id: object::id(item),
@@ -66,7 +67,7 @@ public fun delete_share_item(cap: Cap, share: Share) {
     object::delete(capId)
 }
 
-public entry fun share_item_entry(vault: &Vault, item: &Item, recipients: vector<address>, created_at: u64, ttl: u64, ctx: &mut TxContext) {
+entry fun share_item_entry(vault: &Vault, item: &Item, recipients: vector<address>, created_at: u64, ttl: u64, ctx: &mut TxContext) {
     let (share, cap) = share_item(vault, item, recipients, created_at, ttl, ctx);
     event::emit(ShareCreated {
         item_id: object::id(item),

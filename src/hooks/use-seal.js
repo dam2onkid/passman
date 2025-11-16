@@ -1,11 +1,23 @@
 import { useState } from "react";
-import { SealClient, getAllowlistedKeyServers, SessionKey } from "@mysten/seal";
+import { SealClient, SessionKey } from "@mysten/seal";
 import { fromHex, toHex } from "@mysten/sui/utils";
 import { useSignPersonalMessage, useCurrentAccount } from "@mysten/dapp-kit";
 
 import { useSuiWallet } from "./use-sui-wallet";
 import { DEFAULT_NETWORK } from "@/lib/network-config";
 import useKeySessionStore from "@/store/key-session-store";
+
+const KEY_SERVERS = {
+  testnet: [
+    "0x73d05d62c18d9374e3ea529e8e0ed6161da1a141a94d3f76ae3fe4e99356db75",
+    "0xf5d14a81a982144ae441cd7d64b09027f116a468bd36e7eca494f750591623c8",
+  ],
+  mainnet: [],
+};
+
+const getAllowlistedKeyServers = (network) => {
+  return KEY_SERVERS[network] || KEY_SERVERS.testnet;
+};
 
 export const getSealId = (vaultId, nonce) => {
   nonce = nonce || crypto.getRandomValues(new Uint8Array(5));

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { get } from "lodash-es";
 
 import { useSuiWallet } from "./use-sui-wallet";
+import { fetchFromWalrus } from "@/lib/walrus-client";
 
 export default function useFetchItems(vaultId) {
   const { currentAccount, client: suiClient } = useSuiWallet();

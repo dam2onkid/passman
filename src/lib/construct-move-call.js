@@ -16,7 +16,7 @@ export function createVaultMoveCallTx(args = {}, gasBudget = GAS_BUDGET) {
 }
 
 export function createItemMoveCallTx(args = {}, gasBudget = GAS_BUDGET) {
-  const { vaultId, capId, name, itemType, nonce, encryptedObject } = args;
+  const { vaultId, capId, name, itemType, nonce, walrusBlobId } = args;
   const tx = new Transaction();
   tx.moveCall({
     target: `${PACKAGE_ID}::vault::create_item_entry`,
@@ -26,7 +26,7 @@ export function createItemMoveCallTx(args = {}, gasBudget = GAS_BUDGET) {
       tx.pure.string(itemType),
       tx.object(vaultId),
       tx.pure.vector("u8", Array.from(nonce)),
-      tx.pure.vector("u8", Array.from(encryptedObject)),
+      tx.pure.string(walrusBlobId),
     ],
   });
   tx.setGasBudget(gasBudget);
@@ -34,14 +34,14 @@ export function createItemMoveCallTx(args = {}, gasBudget = GAS_BUDGET) {
 }
 
 export function editItemMoveCallTx(args = {}, gasBudget = GAS_BUDGET) {
-  const { capId, itemId, name, encryptedObject } = args;
+  const { capId, itemId, name, walrusBlobId } = args;
   const tx = new Transaction();
   tx.moveCall({
     target: `${PACKAGE_ID}::vault::update_item`,
     arguments: [
       tx.object(capId),
       tx.pure.string(name),
-      tx.pure.vector("u8", Array.from(encryptedObject)),
+      tx.pure.string(walrusBlobId),
       tx.object(itemId),
     ],
   });

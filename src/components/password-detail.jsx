@@ -52,6 +52,7 @@ import {
 import { ITEM_TYPE_DATA, getItemIcon } from "@/constants/source-type";
 import { PasswordGenerator } from "@/components/password-generator";
 import { ShareModal } from "@/components/share-modal";
+import { uploadToWalrus, fetchFromWalrus } from "@/lib/walrus-client";
 
 export function PasswordDetail({ entry, onItemDeleted }) {
   const { encryptData } = useSealEncrypt();
@@ -72,9 +73,10 @@ export function PasswordDetail({ entry, onItemDeleted }) {
   const { vaultId, capId } = useActiveVault();
   const packageId = useNetworkVariable("passman");
   const {
-    client: suiClient,
+    client,
     isConnected: isWalletConnected,
     signAndExecuteTransaction,
+    walletAddress,
   } = useSuiWallet();
   const { decryptData } = useSealDecrypt({ packageId });
 
@@ -139,10 +141,22 @@ export function PasswordDetail({ entry, onItemDeleted }) {
           return;
         }
 
+        const { blob_id } = await uploadToWalrus(
+          encryptedObject,
+          signAndExecuteTransaction,
+          walletAddress,
+          client
+        );
+        if (!blob_id) {
+          toast.error("Failed to upload to Walrus");
+          setIsSaving(false);
+          return;
+        }
+
         const tx = editItemMoveCallTx({
           capId,
           name: formData.itemName,
-          encryptedObject,
+          walrusBlobId: blob_id,
           itemId: entry.id.id,
         });
 
@@ -239,6 +253,8 @@ export function PasswordDetail({ entry, onItemDeleted }) {
     setIsDecrypting(true);
 
     try {
+      const encryptedData = await fetchFromWalrus(entry.walrus_blob_id, client);
+
       const { id } = getSealId(vaultId, entry.nonce);
       const txBytes = await ownerSealApproveMoveCallTx({
         id,
@@ -247,7 +263,7 @@ export function PasswordDetail({ entry, onItemDeleted }) {
       }).build({ client: suiClient, onlyTransactionKind: true });
 
       const decrypted = await decryptData({
-        encryptedObject: new Uint8Array(entry.data),
+        encryptedObject: encryptedData,
         txBytes,
       });
       const decodedData = new TextDecoder().decode(decrypted);
