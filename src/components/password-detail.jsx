@@ -141,12 +141,12 @@ export function PasswordDetail({ entry, onItemDeleted }) {
           return;
         }
 
-        const { blob_id } = await uploadToWalrus(
-          encryptedObject,
+        const { blob_id } = await uploadToWalrus({
+          encryptedData: encryptedObject,
           signAndExecuteTransaction,
-          walletAddress,
-          client
-        );
+          owner: walletAddress,
+          client,
+        });
         if (!blob_id) {
           toast.error("Failed to upload to Walrus");
           setIsSaving(false);
@@ -164,7 +164,7 @@ export function PasswordDetail({ entry, onItemDeleted }) {
           { transaction: tx },
           {
             onSuccess: async (result) => {
-              await suiClient.waitForTransaction({
+              await client.waitForTransaction({
                 digest: result.digest,
                 options: { showEffects: true },
               });
@@ -226,7 +226,7 @@ export function PasswordDetail({ entry, onItemDeleted }) {
         { transaction: tx },
         {
           onSuccess: async (result) => {
-            await suiClient.waitForTransaction({
+            await client.waitForTransaction({
               digest: result.digest,
               options: { showEffects: true },
             });
@@ -254,13 +254,18 @@ export function PasswordDetail({ entry, onItemDeleted }) {
 
     try {
       const encryptedData = await fetchFromWalrus(entry.walrus_blob_id, client);
+      console.log("encryptedData", encryptedData);
+
+      if (!encryptedData || encryptedData.length === 0) {
+        throw new Error("Failed to fetch encrypted data from Walrus");
+      }
 
       const { id } = getSealId(vaultId, entry.nonce);
       const txBytes = await ownerSealApproveMoveCallTx({
         id,
         vaultId,
         itemId: entry?.id?.id,
-      }).build({ client: suiClient, onlyTransactionKind: true });
+      }).build({ client, onlyTransactionKind: true });
 
       const decrypted = await decryptData({
         encryptedObject: encryptedData,

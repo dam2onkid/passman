@@ -1,23 +1,29 @@
-import { useState } from "react";
-import { SealClient, SessionKey } from "@mysten/seal";
+import { useState, useMemo } from "react";
+import {
+  SealClient,
+  SessionKey,
+  EncryptedObject,
+  getAllowlistedKeyServers,
+} from "@mysten/seal";
 import { fromHex, toHex } from "@mysten/sui/utils";
 import { useSignPersonalMessage, useCurrentAccount } from "@mysten/dapp-kit";
 
 import { useSuiWallet } from "./use-sui-wallet";
 import { DEFAULT_NETWORK } from "@/lib/network-config";
 import useKeySessionStore from "@/store/key-session-store";
-
 const KEY_SERVERS = {
   testnet: [
     "0x73d05d62c18d9374e3ea529e8e0ed6161da1a141a94d3f76ae3fe4e99356db75",
     "0xf5d14a81a982144ae441cd7d64b09027f116a468bd36e7eca494f750591623c8",
   ],
-  mainnet: [],
+  mainnet: [
+    "0x73d05d62c18d9374e3ea529e8e0ed6161da1a141a94d3f76ae3fe4e99356db75",
+  ],
 };
 
-const getAllowlistedKeyServers = (network) => {
-  return KEY_SERVERS[network] || KEY_SERVERS.testnet;
-};
+// const getAllowlistedKeyServers = (network) => {
+//   return KEY_SERVERS[network] || KEY_SERVERS.testnet;
+// };
 
 export const getSealId = (vaultId, nonce) => {
   nonce = nonce || crypto.getRandomValues(new Uint8Array(5));
@@ -31,25 +37,30 @@ export const useSealEncrypt = ({ verifyKeyServers = false } = {}) => {
   const [error, setError] = useState(null);
   const { client: suiClient } = useSuiWallet();
 
-  const encryptData = async (
-    { threshold = 1, packageId, id, data },
-    retryCount = 0
-  ) => {
+  const sealClient = useMemo(() => {
+    if (!suiClient) return null;
+    return new SealClient({
+      suiClient,
+      serverConfigs: getAllowlistedKeyServers(DEFAULT_NETWORK).map((id) => ({
+        objectId: id,
+        weight: 1,
+      })),
+      verifyKeyServers: false,
+    });
+  }, [suiClient, verifyKeyServers]);
+
+  const encryptData = async ({ packageId, id, data }) => {
+    if (!sealClient) {
+      setError("SuiClient not initialized");
+      return null;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      const client = new SealClient({
-        suiClient,
-        serverConfigs: getAllowlistedKeyServers(DEFAULT_NETWORK).map((id) => ({
-          objectId: id,
-          weight: 1,
-        })),
-        verifyKeyServers,
-      });
-
-      const { encryptedObject, key } = await client.encrypt({
-        threshold,
+      const { encryptedObject, key } = await sealClient.encrypt({
+        threshold: 2,
         packageId,
         id,
         data,
@@ -58,6 +69,7 @@ export const useSealEncrypt = ({ verifyKeyServers = false } = {}) => {
       return { encryptedObject, key };
     } catch (err) {
       setError(err.message || "Failed to encrypt data");
+      return null;
     } finally {
       setLoading(false);
     }
@@ -70,31 +82,70 @@ export const useSealEncrypt = ({ verifyKeyServers = false } = {}) => {
   };
 };
 
-const MAX_RETRIES = 2;
 export const useSealDecrypt = ({ packageId, ttlMin = 10 } = {}) => {
   const { client: suiClient } = useSuiWallet();
-  const sealClient = new SealClient({
-    suiClient,
-    serverConfigs: getAllowlistedKeyServers(DEFAULT_NETWORK).map((id) => ({
-      objectId: id,
-      weight: 1,
-    })),
-    verifyKeyServers: false,
-  });
 
   const { mutate: signPersonalMessage } = useSignPersonalMessage();
   const { exportedSessionKey, setExportedSessionKey } = useKeySessionStore();
   const account = useCurrentAccount();
 
+  const sealClient = useMemo(() => {
+    if (!suiClient) return null;
+    return new SealClient({
+      suiClient,
+      serverConfigs: getAllowlistedKeyServers(DEFAULT_NETWORK).map((id) => ({
+        objectId: id,
+        weight: 1,
+      })),
+      verifyKeyServers: false,
+    });
+  }, [suiClient]);
+
   const isValidSessionKey = (sessionKey) => {
     if (!sessionKey) return false;
     const expire = sessionKey.creationTimeMs + sessionKey.ttlMin * 60 * 1000;
     if (expire < Date.now()) return false;
-    return sessionKey.address === account.address;
+    return sessionKey.address === account?.address;
   };
 
-  const decryptData = async ({ encryptedObject, txBytes, retry = false }) => {
-    if (!account.address) return null;
+  const decryptData = async ({ encryptedObject, txBytes }) => {
+    if (!account?.address || !sealClient) {
+      throw new Error("Missing account or sealClient");
+    }
+
+    if (!encryptedObject || !(encryptedObject instanceof Uint8Array)) {
+      throw new Error("Invalid encryptedObject: must be Uint8Array");
+    }
+
+    if (!txBytes) {
+      throw new Error("txBytes is required for decryption");
+    }
+
+    if (encryptedObject.length === 0) {
+      throw new Error("encryptedObject is empty");
+    }
+
+    let parsedEncryptedObject;
+    try {
+      parsedEncryptedObject = EncryptedObject.parse(encryptedObject);
+      console.log("Parsed encrypted object:", {
+        threshold: parsedEncryptedObject.threshold,
+        services: parsedEncryptedObject.services,
+        id: parsedEncryptedObject.id,
+      });
+
+      const serverObjectIds = parsedEncryptedObject.services.map(
+        ([serviceId]) => serviceId
+      );
+      console.log("Required key servers:", serverObjectIds);
+      console.log(
+        "Available key servers:",
+        getAllowlistedKeyServers(DEFAULT_NETWORK)
+      );
+    } catch (parseError) {
+      console.error("Failed to parse encrypted object:", parseError);
+      throw new Error(`Invalid encrypted object format: ${parseError.message}`);
+    }
 
     try {
       if (isValidSessionKey(exportedSessionKey)) {
@@ -110,7 +161,6 @@ export const useSealDecrypt = ({ packageId, ttlMin = 10 } = {}) => {
         return decrypted;
       }
 
-      // New session key
       setExportedSessionKey(null);
       const newSessionKey = await SessionKey.create({
         address: account.address,
@@ -129,6 +179,7 @@ export const useSealDecrypt = ({ packageId, ttlMin = 10 } = {}) => {
                   result.signature
                 );
                 setExportedSessionKey(newSessionKey.export());
+
                 const decrypted = await sealClient.decrypt({
                   data: encryptedObject,
                   sessionKey: newSessionKey,
@@ -149,10 +200,8 @@ export const useSealDecrypt = ({ packageId, ttlMin = 10 } = {}) => {
         );
       });
     } catch (err) {
-      if (retry) {
-        throw err;
-      }
-      return decryptData({ encryptedObject, txBytes, retry: true });
+      console.error("Decryption error:", err);
+      throw err;
     }
   };
 

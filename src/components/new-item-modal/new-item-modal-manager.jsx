@@ -35,6 +35,7 @@ export function NewItemModalManager({ onNewItemCreated }) {
         id,
         data: uint8Array,
       });
+
       if (!encryptedObject) {
         toast.error("Failed to encrypt data");
         setIsCreatingItem(false);
@@ -54,7 +55,6 @@ export function NewItemModalManager({ onNewItemCreated }) {
         setIsCreatingItem(false);
         return;
       }
-      console.log("blob_id", blob_id);
 
       const tx = createItemMoveCallTx({
         vaultId,

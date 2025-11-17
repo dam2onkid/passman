@@ -21,11 +21,6 @@ export async function uploadToWalrus({
       owner,
       deletable: true,
     });
-    console.log("registerTx", {
-      epochs,
-      owner,
-      registerTx,
-    });
 
     return new Promise((resolve, reject) => {
       signAndExecuteTransaction(
@@ -46,7 +41,7 @@ export async function uploadToWalrus({
                     const files = await flow.listFiles();
                     console.log("files", files);
                     resolve({
-                      blob_id: files[0].id,
+                      blob_id: files[0].blobId,
                       blob_object_id: files[0].blobObject.id,
                     });
                   },
@@ -74,23 +69,16 @@ export async function uploadToWalrus({
   }
 }
 
-export async function fetchFromWalrus(blobId, client) {
+export async function fetchFromWalrus(walrusId, client) {
   try {
-    const blob = await client.walrus.readBlob({ blobId });
-    return blob;
+    const [file] = await client.walrus.getFiles({ ids: [walrusId] });
+    if (!file) {
+      throw new Error("Walrus file not found");
+    }
+    const bytes = await file.bytes();
+    return bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
   } catch (error) {
     console.error("Error fetching from Walrus:", error);
-    throw error;
-  }
-}
-
-export async function fetchFromWalrusByObjectId(blobObjectId, client) {
-  try {
-    const [file] = await client.walrus.getFiles({ ids: [blobObjectId] });
-    const bytes = await file.bytes();
-    return bytes;
-  } catch (error) {
-    console.error("Error fetching from Walrus by object ID:", error);
     throw error;
   }
 }
