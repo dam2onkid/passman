@@ -61,8 +61,25 @@ export const useSealEncrypt = ({ verifyKeyServers = false } = {}) => {
         data,
       });
 
+      console.log(
+        "[ENCRYPT] encryptedObject type:",
+        encryptedObject.constructor.name
+      );
+      console.log("[ENCRYPT] encryptedObject length:", encryptedObject.length);
+      console.log(
+        "[ENCRYPT] First 50 bytes:",
+        Array.from(encryptedObject.slice(0, 50))
+      );
+
+      if (!(encryptedObject instanceof Uint8Array)) {
+        throw new Error(
+          `Expected Uint8Array, got ${encryptedObject.constructor.name}`
+        );
+      }
+
       return { encryptedObject, key };
     } catch (err) {
+      console.error("Encryption error:", err);
       setError(err.message || "Failed to encrypt data");
       return null;
     } finally {
@@ -122,8 +139,21 @@ export const useSealDecrypt = ({ packageId, ttlMin = 10 } = {}) => {
 
     let parsedEncryptedObject;
     try {
+      console.log(
+        "[DECRYPT] Before parsing - encryptedObject type:",
+        encryptedObject?.constructor.name
+      );
+      console.log(
+        "[DECRYPT] Before parsing - encryptedObject length:",
+        encryptedObject?.length
+      );
+      console.log(
+        "[DECRYPT] Before parsing - First 50 bytes:",
+        Array.from(encryptedObject.slice(0, 50))
+      );
+
       parsedEncryptedObject = EncryptedObject.parse(encryptedObject);
-      console.log("Parsed encrypted object:", {
+      console.log("[DECRYPT] Parsed encrypted object:", {
         threshold: parsedEncryptedObject.threshold,
         services: parsedEncryptedObject.services,
         id: parsedEncryptedObject.id,
@@ -132,13 +162,13 @@ export const useSealDecrypt = ({ packageId, ttlMin = 10 } = {}) => {
       const serverObjectIds = parsedEncryptedObject.services.map(
         ([serviceId]) => serviceId
       );
-      console.log("Required key servers:", serverObjectIds);
+      console.log("[DECRYPT] Required key servers:", serverObjectIds);
       console.log(
-        "Available key servers:",
+        "[DECRYPT] Available key servers:",
         getAllowlistedKeyServers(DEFAULT_NETWORK)
       );
     } catch (parseError) {
-      console.error("Failed to parse encrypted object:", parseError);
+      console.error("[DECRYPT] Failed to parse encrypted object:", parseError);
       throw new Error(`Invalid encrypted object format: ${parseError.message}`);
     }
 

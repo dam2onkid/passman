@@ -10,6 +10,22 @@ export async function uploadToWalrus({
   epochs = 5,
 }) {
   try {
+    console.log(
+      "[UPLOAD] encryptedData type:",
+      encryptedData?.constructor.name
+    );
+    console.log("[UPLOAD] encryptedData length:", encryptedData?.length);
+    console.log(
+      "[UPLOAD] First 50 bytes:",
+      Array.from(encryptedData.slice(0, 50))
+    );
+
+    if (!(encryptedData instanceof Uint8Array)) {
+      throw new Error(
+        `Invalid data type for upload: ${encryptedData?.constructor.name}. Expected Uint8Array`
+      );
+    }
+
     const flow = client.walrus.writeFilesFlow({
       files: [WalrusFile.from({ contents: encryptedData })],
     });
@@ -39,9 +55,11 @@ export async function uploadToWalrus({
                   onSuccess: async (certifyResult) => {
                     console.log("Certify result:", certifyResult);
                     const files = await flow.listFiles();
-                    console.log("files", files);
+                    console.log("[UPLOAD] files[0].id:", files[0].id);
+                    console.log("[UPLOAD] Saving patch ID:", files[0].id);
+
                     resolve({
-                      blob_id: files[0].blobId,
+                      blob_id: files[0].id,
                       blob_object_id: files[0].blobObject.id,
                     });
                   },
@@ -69,16 +87,26 @@ export async function uploadToWalrus({
   }
 }
 
-export async function fetchFromWalrus(walrusId, client) {
+export async function fetchFromWalrus(patchId, client) {
   try {
-    const [file] = await client.walrus.getFiles({ ids: [walrusId] });
+    console.log("[FETCH] Fetching from Walrus, patch ID:", patchId);
+
+    const [file] = await client.walrus.getFiles({ ids: [patchId] });
+
     if (!file) {
       throw new Error("Walrus file not found");
     }
+
+    console.log("[FETCH] File found, getting bytes...");
     const bytes = await file.bytes();
+
+    console.log("[FETCH] bytes type:", bytes?.constructor.name);
+    console.log("[FETCH] bytes length:", bytes?.length);
+    console.log("[FETCH] First 50 bytes:", Array.from(bytes.slice(0, 50)));
+
     return bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
   } catch (error) {
-    console.error("Error fetching from Walrus:", error);
+    console.error("[FETCH] Error fetching from Walrus:", error);
     throw error;
   }
 }
