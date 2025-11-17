@@ -1,10 +1,5 @@
 import { useState, useMemo } from "react";
-import {
-  SealClient,
-  SessionKey,
-  EncryptedObject,
-  getAllowlistedKeyServers,
-} from "@mysten/seal";
+import { SealClient, SessionKey, EncryptedObject } from "@mysten/seal";
 import { fromHex, toHex } from "@mysten/sui/utils";
 import { useSignPersonalMessage, useCurrentAccount } from "@mysten/dapp-kit";
 
@@ -21,9 +16,9 @@ const KEY_SERVERS = {
   ],
 };
 
-// const getAllowlistedKeyServers = (network) => {
-//   return KEY_SERVERS[network] || KEY_SERVERS.testnet;
-// };
+const getAllowlistedKeyServers = (network) => {
+  return KEY_SERVERS[network] || KEY_SERVERS.testnet;
+};
 
 export const getSealId = (vaultId, nonce) => {
   nonce = nonce || crypto.getRandomValues(new Uint8Array(5));
