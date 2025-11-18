@@ -6,7 +6,10 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "move:test": "sui move test",
+    "move:build": "sui move build",
+    "move:publish": "sui client publish --gas-budget 100000000"
   },
   "dependencies": {
     "@mysten/dapp-kit": "^0.19.9",

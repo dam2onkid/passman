@@ -8,6 +8,7 @@ import {
   Star,
   List,
   GalleryVerticalEnd,
+  Shield,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -45,6 +46,11 @@ const data = {
       title: "Share",
       url: "/dashboard/share",
       icon: Star,
+    },
+    {
+      title: "Deadman Switch",
+      url: "/dashboard/deadman",
+      icon: Shield,
     },
   ],
   categories: [

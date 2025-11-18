@@ -135,3 +135,85 @@ export function updateShareMoveCallTx(args = {}, gasBudget = GAS_BUDGET) {
   tx.setGasBudget(gasBudget);
   return tx;
 }
+
+export function setupDeadmanSwitchTx(args = {}, gasBudget = GAS_BUDGET) {
+  const { vaultId, capId, beneficiary, inactivityPeriodMs } = args;
+  const tx = new Transaction();
+  tx.moveCall({
+    target: `${PACKAGE_ID}::deadman::setup`,
+    arguments: [
+      tx.object(vaultId),
+      tx.object(capId),
+      tx.pure.address(beneficiary),
+      tx.pure.u64(inactivityPeriodMs),
+      tx.object(SUI_CLOCK_OBJECT_ID),
+    ],
+  });
+  tx.setGasBudget(gasBudget);
+  return tx;
+}
+
+export function updateDeadmanSwitchTx(args = {}, gasBudget = GAS_BUDGET) {
+  const { switchId, vaultId, capId, beneficiary, inactivityPeriodMs } = args;
+  const tx = new Transaction();
+  tx.moveCall({
+    target: `${PACKAGE_ID}::deadman::update`,
+    arguments: [
+      tx.object(switchId),
+      tx.object(vaultId),
+      tx.object(capId),
+      tx.pure.address(beneficiary),
+      tx.pure.u64(inactivityPeriodMs),
+      tx.object(SUI_CLOCK_OBJECT_ID),
+    ],
+  });
+  tx.setGasBudget(gasBudget);
+  return tx;
+}
+
+export function heartbeatDeadmanSwitchTx(args = {}, gasBudget = GAS_BUDGET) {
+  const { switchId, vaultId, capId } = args;
+  const tx = new Transaction();
+  tx.moveCall({
+    target: `${PACKAGE_ID}::deadman::heartbeat`,
+    arguments: [
+      tx.object(switchId),
+      tx.object(vaultId),
+      tx.object(capId),
+      tx.object(SUI_CLOCK_OBJECT_ID),
+    ],
+  });
+  tx.setGasBudget(gasBudget);
+  return tx;
+}
+
+export function claimDeadmanSwitchTx(args = {}, gasBudget = GAS_BUDGET) {
+  const { switchId, vaultId, capId } = args;
+  const tx = new Transaction();
+  tx.moveCall({
+    target: `${PACKAGE_ID}::deadman::claim`,
+    arguments: [
+      tx.object(switchId),
+      tx.object(vaultId),
+      tx.object(capId),
+      tx.object(SUI_CLOCK_OBJECT_ID),
+    ],
+  });
+  tx.setGasBudget(gasBudget);
+  return tx;
+}
+
+export function disableDeadmanSwitchTx(args = {}, gasBudget = GAS_BUDGET) {
+  const { switchId, vaultId, capId } = args;
+  const tx = new Transaction();
+  tx.moveCall({
+    target: `${PACKAGE_ID}::deadman::disable`,
+    arguments: [
+      tx.object(switchId),
+      tx.object(vaultId),
+      tx.object(capId),
+    ],
+  });
+  tx.setGasBudget(gasBudget);
+  return tx;
+}

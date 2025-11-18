@@ -134,6 +134,22 @@ entry fun seal_approve(id: vector<u8>, vault: &Vault, item: &Item) {
     assert!(check_policy(id, vault, item), ENoAccess)
 }
 
+public(package) fun verify_cap(cap: &Cap, vault: &Vault): bool {
+    cap.vault_id == object::id(vault)
+}
+
+public(package) fun transfer_ownership(old_cap: Cap, new_owner: address, ctx: &mut TxContext) {
+    let Cap { id: cap_id, vault_id } = old_cap;
+    object::delete(cap_id);
+
+    let new_cap = Cap {
+        id: object::new(ctx),
+        vault_id
+    };
+
+    transfer::transfer(new_cap, new_owner);
+}
+
 // === Test ===
 
 #[test]
