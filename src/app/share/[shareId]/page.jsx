@@ -37,6 +37,7 @@ import { getSealId, useSealDecrypt } from "@/hooks/use-seal";
 import { useNetworkVariable } from "@/lib/network-config";
 import { shareSealApproveMoveCallTx } from "@/lib/construct-move-call";
 import { ITEM_TYPE_DATA, getItemIcon } from "@/constants/source-type";
+import { fetchFromWalrus } from "@/lib/walrus-client";
 
 function ShareViewContent({ shareId, vaultId }) {
   const { shareData, loading, error } = useFetchShareById(shareId);
@@ -52,6 +53,11 @@ function ShareViewContent({ shareId, vaultId }) {
     setIsDecrypting(true);
 
     try {
+      const encryptedData = await fetchFromWalrus(
+        shareData.itemData.walrus_blob_id,
+        suiClient
+      );
+
       const { id } = getSealId(vaultId, shareData.itemData.nonce);
       const txBytes = await shareSealApproveMoveCallTx({
         id,
@@ -60,7 +66,7 @@ function ShareViewContent({ shareId, vaultId }) {
 
       const decrypted = await decryptData({
         packageId,
-        encryptedObject: new Uint8Array(shareData.itemData.data),
+        encryptedObject: encryptedData,
         txBytes,
       });
       const decodedData = new TextDecoder().decode(decrypted);
@@ -74,11 +80,15 @@ function ShareViewContent({ shareId, vaultId }) {
   };
 
   useEffect(() => {
-    if (!shareData?.itemData?.id || !currentAccount?.address) {
+    if (
+      !shareData?.itemData?.walrus_blob_id ||
+      !currentAccount?.address ||
+      !vaultId
+    ) {
       return;
     }
     decryptItem();
-  }, [shareData]);
+  }, [shareData, vaultId]);
 
   const handleCopyToClipboard = async (text, label) => {
     try {
