@@ -1,0 +1,19 @@
+{
+  "name": "@passman/utils",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.2.0",
+    "@mysten/sui": "^1.45.0",
+    "@mysten/dapp-kit": "^0.19.9",
+    "@mysten/walrus": "^0.8.4"
+  }
+}
