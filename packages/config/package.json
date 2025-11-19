@@ -1,0 +1,12 @@
+{
+  "name": "@passman/config",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    "./eslint": "./eslint.config.js"
+  },
+  "peerDependencies": {
+    "eslint": "^9"
+  }
+}
+
