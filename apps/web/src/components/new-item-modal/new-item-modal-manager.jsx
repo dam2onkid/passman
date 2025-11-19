@@ -9,7 +9,7 @@ import { ItemFormModal } from "./item-form-modal";
 import { ITEM_TYPE } from "@passman/utils";
 import { useSealEncrypt, getSealId } from "@/hooks/use-seal";
 import { useSuiWallet } from "@/hooks/use-sui-wallet";
-import { useNetworkVariable } from "@passman/utils";
+import { useNetworkVariable } from "@passman/utils/network-config";
 import useActiveVault from "@/hooks/use-active-vault";
 import { createItemMoveCallTx } from "@passman/utils";
 import { uploadToWalrus } from "@passman/utils";

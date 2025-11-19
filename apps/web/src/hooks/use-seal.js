@@ -4,7 +4,7 @@ import { fromHex, toHex } from "@mysten/sui/utils";
 import { useSignPersonalMessage, useCurrentAccount } from "@mysten/dapp-kit";
 
 import { useSuiWallet } from "./use-sui-wallet";
-import { DEFAULT_NETWORK } from "@passman/utils";
+import { DEFAULT_NETWORK } from "@passman/utils/network-config";
 import useKeySessionStore from "@/store/key-session-store";
 const KEY_SERVERS = {
   testnet: [

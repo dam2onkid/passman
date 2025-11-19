@@ -22,7 +22,7 @@ import {
 import { format, addDays, addHours } from "date-fns";
 import { getItemIcon } from "@passman/utils";
 import useActiveVault from "@/hooks/use-active-vault";
-import { useNetworkVariable } from "@passman/utils";
+import { useNetworkVariable } from "@passman/utils/network-config";
 import { useSuiWallet } from "@/hooks/use-sui-wallet";
 import { shareItemMoveCallTx } from "@passman/utils";
 

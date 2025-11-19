@@ -1,1 +1,7 @@
-{}
+{
+  "/dashboard/all-items/page": "app/dashboard/all-items/page.js",
+  "/dashboard/deadman/page": "app/dashboard/deadman/page.js",
+  "/dashboard/share/page": "app/dashboard/share/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/share/[shareId]/page": "app/share/[shareId]/page.js"
+}

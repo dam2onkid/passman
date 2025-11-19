@@ -1,3 +1,5 @@
+"use client";
+
 import { PACKAGE_ID, NETWORK } from "./constants/config";
 import { createNetworkConfig } from "@mysten/dapp-kit";
 import { getFullnodeUrl } from "@mysten/sui/client";

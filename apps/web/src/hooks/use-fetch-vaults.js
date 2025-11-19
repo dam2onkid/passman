@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSuiWallet } from "./use-sui-wallet";
 import useVaultStore from "@/store/vault-store";
-import { useNetworkVariable } from "@passman/utils";
+import { useNetworkVariable } from "@passman/utils/network-config";
 
 const INTERVAL = 3000;
 

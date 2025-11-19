@@ -41,7 +41,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useSealDecrypt, getSealId, useSealEncrypt } from "@/hooks/use-seal";
-import { useNetworkVariable } from "@passman/utils";
+import { useNetworkVariable } from "@passman/utils/network-config";
 import { useSuiWallet } from "@/hooks/use-sui-wallet";
 import useActiveVault from "@/hooks/use-active-vault";
 import {

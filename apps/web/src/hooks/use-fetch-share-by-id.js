@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { get } from "lodash-es";
 
 import { useSuiWallet } from "./use-sui-wallet";
-import { useNetworkVariable } from "@passman/utils";
+import { useNetworkVariable } from "@passman/utils/network-config";
 
 export default function useFetchShareById(shareId) {
   const { client: suiClient, currentAccount } = useSuiWallet();

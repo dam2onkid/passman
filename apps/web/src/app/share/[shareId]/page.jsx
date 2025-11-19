@@ -34,7 +34,7 @@ import { toast } from "sonner";
 import useFetchShareById from "@/hooks/use-fetch-share-by-id";
 import { useSuiWallet } from "@/hooks/use-sui-wallet";
 import { getSealId, useSealDecrypt } from "@/hooks/use-seal";
-import { useNetworkVariable } from "@passman/utils";
+import { useNetworkVariable } from "@passman/utils/network-config";
 import { shareSealApproveMoveCallTx } from "@passman/utils";
 import { ITEM_TYPE_DATA, getItemIcon } from "@passman/utils";
 import { fetchFromWalrus } from "@passman/utils";
