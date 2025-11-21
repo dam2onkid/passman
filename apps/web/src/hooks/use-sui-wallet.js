@@ -10,10 +10,21 @@ import {
 import { useCallback, useMemo } from "react";
 import { walrus } from "@mysten/walrus";
 import { NETWORK } from "@passman/utils";
+import { useZkLogin } from "./use-zk-login";
 
 export function useSuiWallet() {
   const baseClient = useSuiClient();
   const currentAccount = useCurrentAccount();
+
+  // zkLogin hooks
+  const {
+    zkLoginAddress,
+    isLoggedIn: isZkLoggedIn,
+    executeZkLoginTransaction,
+    login: loginZk,
+    logout: logoutZk,
+    isLoggingIn: isZkLoggingIn,
+  } = useZkLogin();
 
   const client = useMemo(() => {
     return baseClient.$extend(
@@ -31,13 +42,16 @@ export function useSuiWallet() {
     );
   }, [baseClient]);
 
-  const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction();
+  const { mutate: signAndExecuteWalletTransaction } = useSignAndExecuteTransaction();
 
   const { mutate: connect } = useConnectWallet();
   const { mutate: disconnect } = useDisconnectWallet();
 
-  const isConnected = Boolean(currentAccount);
-  const walletAddress = currentAccount?.address;
+  const isConnected = Boolean(currentAccount) || isZkLoggedIn;
+  const walletAddress = currentAccount?.address || zkLoginAddress;
+
+  // Normalize currentAccount to include zkLogin user if active
+  const activeAccount = currentAccount || (isZkLoggedIn ? { address: zkLoginAddress, label: "zkLogin" } : null);
 
   const handleConnect = useCallback(() => {
     if (!isConnected) {
@@ -46,18 +60,52 @@ export function useSuiWallet() {
   }, [connect, isConnected]);
 
   const handleDisconnect = useCallback(() => {
-    if (isConnected) {
+    if (currentAccount) {
       disconnect();
     }
-  }, [disconnect, isConnected]);
+    if (isZkLoggedIn) {
+      logoutZk();
+    }
+  }, [disconnect, currentAccount, isZkLoggedIn, logoutZk]);
+
+  const handleSignAndExecuteTransaction = useCallback(
+    async (input, options) => {
+      if (isZkLoggedIn) {
+        // For zkLogin, input is expected to contain { transactionBlock }
+        // Adapt if input is different or has transaction property
+        const tx = input.transaction || input.transactionBlock;
+        if (!tx) {
+           throw new Error("Transaction block is required");
+        }
+
+        return executeZkLoginTransaction({ transactionBlock: tx })
+          .then((result) => {
+             if (options?.onSuccess) options.onSuccess(result);
+             return result;
+          })
+          .catch((error) => {
+             if (options?.onError) options.onError(error);
+             throw error;
+          });
+      } else {
+        // Wallet adapter
+        return signAndExecuteWalletTransaction(input, options);
+      }
+    },
+    [isZkLoggedIn, executeZkLoginTransaction, signAndExecuteWalletTransaction]
+  );
 
   return {
     client,
-    currentAccount,
-    signAndExecuteTransaction,
+    currentAccount: activeAccount,
+    signAndExecuteTransaction: handleSignAndExecuteTransaction,
     isConnected,
     walletAddress,
     connect: handleConnect,
     disconnect: handleDisconnect,
+    // Expose zkLogin specific methods/state if needed
+    isZkLoggedIn,
+    isZkLoggingIn,
+    loginZk,
   };
 }

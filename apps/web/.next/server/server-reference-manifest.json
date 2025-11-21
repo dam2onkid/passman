@@ -1,5 +1,58 @@
 {
-  "node": {},
+  "node": {
+    "60ee3182493e84d70315398e5708ebd14db08d285a": {
+      "workers": {
+        "app/auth/callback/page": {
+          "moduleId": "[project]/apps/web/.next-internal/server/app/auth/callback/page/actions.js { ACTIONS_MODULE0 => \"[project]/apps/web/src/app/actions/enoki.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false
+        },
+        "app/dashboard/all-items/page": {
+          "moduleId": "[project]/apps/web/.next-internal/server/app/dashboard/all-items/page/actions.js { ACTIONS_MODULE0 => \"[project]/apps/web/src/app/actions/enoki.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false
+        },
+        "app/dashboard/page": {
+          "moduleId": "[project]/apps/web/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/apps/web/src/app/actions/enoki.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false
+        },
+        "app/login/page": {
+          "moduleId": "[project]/apps/web/.next-internal/server/app/login/page/actions.js { ACTIONS_MODULE0 => \"[project]/apps/web/src/app/actions/enoki.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/auth/callback/page": "action-browser",
+        "app/dashboard/all-items/page": "action-browser",
+        "app/dashboard/page": "action-browser",
+        "app/login/page": "action-browser"
+      }
+    },
+    "60e48f78b14dbbe77f94d8cb177f592f5c9be32b54": {
+      "workers": {
+        "app/auth/callback/page": {
+          "moduleId": "[project]/apps/web/.next-internal/server/app/auth/callback/page/actions.js { ACTIONS_MODULE0 => \"[project]/apps/web/src/app/actions/enoki.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false
+        },
+        "app/dashboard/all-items/page": {
+          "moduleId": "[project]/apps/web/.next-internal/server/app/dashboard/all-items/page/actions.js { ACTIONS_MODULE0 => \"[project]/apps/web/src/app/actions/enoki.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false
+        },
+        "app/dashboard/page": {
+          "moduleId": "[project]/apps/web/.next-internal/server/app/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/apps/web/src/app/actions/enoki.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false
+        },
+        "app/login/page": {
+          "moduleId": "[project]/apps/web/.next-internal/server/app/login/page/actions.js { ACTIONS_MODULE0 => \"[project]/apps/web/src/app/actions/enoki.js [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/auth/callback/page": "action-browser",
+        "app/dashboard/all-items/page": "action-browser",
+        "app/dashboard/page": "action-browser",
+        "app/login/page": "action-browser"
+      }
+    }
+  },
   "edge": {},
   "encryptionKey": "LpKI5mR9b23whQMNuDHW5tij3Ip8IOrXW8B0lzNrvtI="
 }

@@ -1,7 +1,9 @@
 {
+  "/_not-found/page": "app/_not-found/page.js",
+  "/auth/callback/page": "app/auth/callback/page.js",
   "/dashboard/all-items/page": "app/dashboard/all-items/page.js",
-  "/dashboard/deadman/page": "app/dashboard/deadman/page.js",
-  "/dashboard/share/page": "app/dashboard/share/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
-  "/share/[shareId]/page": "app/share/[shareId]/page.js"
+  "/login/page": "app/login/page.js",
+  "/page": "app/page.js"
 }
