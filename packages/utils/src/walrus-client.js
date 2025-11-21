@@ -1,24 +1,12 @@
 "use client";
 
-import { WalrusFile } from "@mysten/walrus";
-
-export async function uploadToWalrus({
-  encryptedData,
-  signAndExecuteTransaction,
-  owner,
-  client,
-  epochs = 5,
-}) {
+export async function uploadToWalrus({ encryptedData, owner, epochs = 5 }) {
   try {
     console.log(
       "[UPLOAD] encryptedData type:",
       encryptedData?.constructor.name
     );
     console.log("[UPLOAD] encryptedData length:", encryptedData?.length);
-    console.log(
-      "[UPLOAD] First 50 bytes:",
-      Array.from(encryptedData.slice(0, 50))
-    );
 
     if (!(encryptedData instanceof Uint8Array)) {
       throw new Error(
@@ -26,61 +14,43 @@ export async function uploadToWalrus({
       );
     }
 
-    const flow = client.walrus.writeFilesFlow({
-      files: [WalrusFile.from({ contents: encryptedData })],
+    // Convert Uint8Array to Base64
+    let base64Data;
+    if (typeof Buffer !== "undefined") {
+      base64Data = Buffer.from(encryptedData).toString("base64");
+    } else {
+      // Browser
+      let binary = "";
+      const len = encryptedData.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(encryptedData[i]);
+      }
+      base64Data = btoa(binary);
+    }
+
+    const response = await fetch("/api/walrus/upload", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        encryptedData: base64Data,
+        owner,
+        epochs,
+      }),
     });
 
-    await flow.encode();
-
-    const registerTx = flow.register({
-      epochs,
-      owner,
-      deletable: true,
-    });
-
-    return new Promise((resolve, reject) => {
-      signAndExecuteTransaction(
-        { transaction: registerTx },
-        {
-          onSuccess: async (result) => {
-            try {
-              console.log("Register result:", result);
-              await flow.upload({ digest: result.digest });
-
-              const certifyTx = flow.certify();
-
-              signAndExecuteTransaction(
-                { transaction: certifyTx },
-                {
-                  onSuccess: async (certifyResult) => {
-                    console.log("Certify result:", certifyResult);
-                    const files = await flow.listFiles();
-                    console.log("[UPLOAD] files[0].id:", files[0].id);
-                    console.log("[UPLOAD] Saving patch ID:", files[0].id);
-
-                    resolve({
-                      blob_id: files[0].id,
-                      blob_object_id: files[0].blobObject.id,
-                    });
-                  },
-                  onError: (error) => {
-                    console.error("Certify transaction failed:", error);
-                    reject(error);
-                  },
-                }
-              );
-            } catch (error) {
-              console.error("Error in upload/certify step:", error);
-              reject(error);
-            }
-          },
-          onError: (error) => {
-            console.error("Register transaction failed:", error);
-            reject(error);
-          },
-        }
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.error || `Upload failed with status ${response.status}`
       );
-    });
+    }
+
+    const result = await response.json();
+    console.log("[UPLOAD] Upload result:", result);
+
+    return result;
   } catch (error) {
     console.error("Error uploading to Walrus:", error);
     throw error;
@@ -89,21 +59,13 @@ export async function uploadToWalrus({
 
 export async function fetchFromWalrus(patchId, client) {
   try {
-    console.log("[FETCH] Fetching from Walrus, patch ID:", patchId);
-
     const [file] = await client.walrus.getFiles({ ids: [patchId] });
 
     if (!file) {
       throw new Error("Walrus file not found");
     }
 
-    console.log("[FETCH] File found, getting bytes...");
     const bytes = await file.bytes();
-
-    console.log("[FETCH] bytes type:", bytes?.constructor.name);
-    console.log("[FETCH] bytes length:", bytes?.length);
-    console.log("[FETCH] First 50 bytes:", Array.from(bytes.slice(0, 50)));
-
     return bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
   } catch (error) {
     console.error("[FETCH] Error fetching from Walrus:", error);

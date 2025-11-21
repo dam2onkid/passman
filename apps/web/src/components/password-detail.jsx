@@ -143,9 +143,7 @@ export function PasswordDetail({ entry, onItemDeleted }) {
 
         const { blob_id } = await uploadToWalrus({
           encryptedData: encryptedObject,
-          signAndExecuteTransaction,
           owner: walletAddress,
-          client,
         });
         if (!blob_id) {
           toast.error("Failed to upload to Walrus");

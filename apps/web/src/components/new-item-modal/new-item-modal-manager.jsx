@@ -44,9 +44,7 @@ export function NewItemModalManager({ onNewItemCreated }) {
 
       const { blob_id } = await uploadToWalrus({
         encryptedData: encryptedObject,
-        signAndExecuteTransaction,
         owner: walletAddress,
-        client,
         epochs: 3,
       });
 
