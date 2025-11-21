@@ -57,13 +57,13 @@ export function VaultSwitcher() {
             setIsAddVaultModalOpen(false);
             toast.success("Vault created successfully");
           } catch (error) {
-            toast.error("Failed to create vault");
+            toast.error(`Failed to create vault: ${error.message}`);
           } finally {
             setIsCreatingVault(false);
           }
         },
         onError: (error) => {
-          toast.error("Failed to create vault");
+          toast.error(`Failed to create vault: ${error.message}`);
           setIsCreatingVault(false);
         },
       }

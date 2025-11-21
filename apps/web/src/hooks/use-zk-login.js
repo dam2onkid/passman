@@ -106,32 +106,29 @@ export function useZkLogin() {
     async ({ transactionBlock }) => {
       try {
         const session = await enokiFlow.getSession();
-        if (!session) {
-          throw new Error("No active zkLogin session");
+        if (!session || !session.jwt) {
+          throw new Error("No active zkLogin session or JWT missing");
         }
 
         const keypair = await enokiFlow.getKeypair({ network: NETWORK });
         const address = keypair.toSuiAddress();
 
-        // 1. Build the transaction bytes
         transactionBlock.setSender(address);
         const transactionBlockKindBytes = await transactionBlock.build({
           client,
           onlyTransactionKind: true,
         });
 
-        // 2. Sponsor the transaction via Server Action
         const { sponsored } = await getSponsoredTransaction(
           toB64(transactionBlockKindBytes),
-          address
+          address,
+          session.jwt
         );
 
-        // 3. Sign the sponsored transaction
         const { signature } = await keypair.signTransaction(
           await fromB64(sponsored.bytes)
         );
 
-        // 4. Execute the transaction via Server Action
         const { result } = await executeSponsoredTransaction(
           sponsored.digest,
           signature

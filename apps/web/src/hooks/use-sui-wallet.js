@@ -42,7 +42,8 @@ export function useSuiWallet() {
     );
   }, [baseClient]);
 
-  const { mutate: signAndExecuteWalletTransaction } = useSignAndExecuteTransaction();
+  const { mutate: signAndExecuteWalletTransaction } =
+    useSignAndExecuteTransaction();
 
   const { mutate: connect } = useConnectWallet();
   const { mutate: disconnect } = useDisconnectWallet();
@@ -51,7 +52,9 @@ export function useSuiWallet() {
   const walletAddress = currentAccount?.address || zkLoginAddress;
 
   // Normalize currentAccount to include zkLogin user if active
-  const activeAccount = currentAccount || (isZkLoggedIn ? { address: zkLoginAddress, label: "zkLogin" } : null);
+  const activeAccount =
+    currentAccount ||
+    (isZkLoggedIn ? { address: zkLoginAddress, label: "zkLogin" } : null);
 
   const handleConnect = useCallback(() => {
     if (!isConnected) {
@@ -75,17 +78,18 @@ export function useSuiWallet() {
         // Adapt if input is different or has transaction property
         const tx = input.transaction || input.transactionBlock;
         if (!tx) {
-           throw new Error("Transaction block is required");
+          throw new Error("Transaction block is required");
         }
 
         return executeZkLoginTransaction({ transactionBlock: tx })
           .then((result) => {
-             if (options?.onSuccess) options.onSuccess(result);
-             return result;
+            if (options?.onSuccess) options.onSuccess(result);
+            return result;
           })
           .catch((error) => {
-             if (options?.onError) options.onError(error);
-             throw error;
+            console.error("Error executing zkLogin transaction:", error);
+            if (options?.onError) options.onError(error);
+            throw error;
           });
       } else {
         // Wallet adapter
