@@ -1,7 +1,6 @@
 "use client";
 
 import { useParams, useSearchParams } from "next/navigation";
-import { useCurrentAccount } from "@mysten/dapp-kit";
 import { useState, useEffect } from "react";
 import {
   Eye,
@@ -22,6 +21,7 @@ import {
 } from "lucide-react";
 
 import { WalletConnectButton } from "@/components/wallet-connect-button";
+import { ZkLoginButton } from "@/components/zk-login-button";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -42,7 +42,12 @@ import { fetchFromWalrus } from "@passman/utils";
 function ShareViewContent({ shareId, vaultId }) {
   const { shareData, loading, error } = useFetchShareById(shareId);
   const [showPassword, setShowPassword] = useState({});
-  const { currentAccount, disconnect, client: suiClient } = useSuiWallet();
+  const {
+    currentAccount,
+    disconnect,
+    client: suiClient,
+    walletAddress,
+  } = useSuiWallet();
   const packageId = useNetworkVariable("passman");
   const { decryptData } = useSealDecrypt({ packageId });
   const [isDecrypting, setIsDecrypting] = useState(false);
@@ -80,15 +85,11 @@ function ShareViewContent({ shareId, vaultId }) {
   };
 
   useEffect(() => {
-    if (
-      !shareData?.itemData?.walrus_blob_id ||
-      !currentAccount?.address ||
-      !vaultId
-    ) {
+    if (!shareData?.itemData?.walrus_blob_id || !walletAddress || !vaultId) {
       return;
     }
     decryptItem();
-  }, [shareData, vaultId]);
+  }, [shareData, vaultId, walletAddress]);
 
   const handleCopyToClipboard = async (text, label) => {
     try {
@@ -285,7 +286,7 @@ function ShareViewContent({ shareId, vaultId }) {
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <div className="text-sm text-muted-foreground">
-              Current wallet: {formatAddress(currentAccount?.address)}
+              Current wallet: {formatAddress(walletAddress)}
             </div>
             <DisconnectWallet />
           </CardContent>
@@ -306,7 +307,7 @@ function ShareViewContent({ shareId, vaultId }) {
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <div className="text-sm text-muted-foreground">
-              Current wallet: {formatAddress(currentAccount?.address)}
+              Current wallet: {formatAddress(walletAddress)}
             </div>
             <DisconnectWallet />
           </CardContent>
@@ -340,7 +341,7 @@ function ShareViewContent({ shareId, vaultId }) {
                   <div>
                     <p className="text-sm font-medium">Connected Wallet</p>
                     <p className="text-xs text-muted-foreground font-mono">
-                      {formatAddress(currentAccount?.address)}
+                      {formatAddress(walletAddress)}
                     </p>
                   </div>
                 </div>
@@ -410,11 +411,11 @@ function ShareViewContent({ shareId, vaultId }) {
 export default function ShareViewPage() {
   const params = useParams();
   const searchParams = useSearchParams();
-  const currentAccount = useCurrentAccount();
+  const { isConnected } = useSuiWallet();
   const shareId = params.shareId;
   const vaultId = searchParams.get("vault_id");
 
-  if (!currentAccount) {
+  if (!isConnected) {
     return (
       <div className="container mx-auto py-16 px-4">
         <div className="max-w-md mx-auto text-center space-y-6">
@@ -432,10 +433,12 @@ export default function ShareViewPage() {
                   <Shield className="h-12 w-12 text-muted-foreground" />
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Connect your wallet to securely access the shared account
-                  information.
+                  Connect your wallet or sign in with Google to securely access
+                  the shared account information.
                 </p>
-                <WalletConnectButton isSidebar={false} className="w-full" />
+                <div className="space-y-3">
+                  <WalletConnectButton isSidebar={false} className="w-full" />
+                </div>
               </div>
             </CardContent>
           </Card>
