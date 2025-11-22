@@ -1,5 +1,7 @@
 "use client";
 
+import { get, set } from "idb-keyval";
+
 export async function uploadToWalrus({ encryptedData, owner, epochs = 5 }) {
   try {
     console.log(
@@ -59,6 +61,18 @@ export async function uploadToWalrus({ encryptedData, owner, epochs = 5 }) {
 
 export async function fetchFromWalrus(patchId, client) {
   try {
+    console.log("[FETCH] Fetching from Walrus:", patchId);
+    // Try to get from cache first
+    try {
+      const cachedData = await get(patchId);
+      if (cachedData) {
+        console.log("[FETCH] Cache hit for:", patchId);
+        return cachedData;
+      }
+    } catch (err) {
+      console.warn("[FETCH] Cache read failed:", err);
+    }
+
     const [file] = await client.walrus.getFiles({ ids: [patchId] });
 
     if (!file) {
@@ -66,7 +80,14 @@ export async function fetchFromWalrus(patchId, client) {
     }
 
     const bytes = await file.bytes();
-    return bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    const data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+
+    // Save to cache (fire and forget)
+    set(patchId, data).catch((err) =>
+      console.warn("[FETCH] Cache write failed:", err)
+    );
+
+    return data;
   } catch (error) {
     console.error("[FETCH] Error fetching from Walrus:", error);
     throw error;

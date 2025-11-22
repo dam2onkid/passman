@@ -23,6 +23,7 @@ import {
 import { WalletConnectButton } from "@/components/wallet-connect-button";
 import useKeySessionStore from "@/store/key-session-store";
 import useActiveVault from "@/hooks/use-active-vault";
+import useVaultStore from "@/store/vault-store";
 
 export function NavUser({ user }) {
   const { isMobile } = useSidebar();
@@ -35,6 +36,7 @@ export function NavUser({ user }) {
     disconnect();
     resetSessionKey();
     resetVault();
+    useVaultStore.persist.clearStorage();
   };
 
   if (!isConnected) return <WalletConnectButton />;
