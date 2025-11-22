@@ -8,8 +8,6 @@ import { cn } from "@passman/utils";
 import useActiveVault from "@/hooks/use-active-vault";
 import useFetchItems from "@/hooks/use-fetch-items";
 import { getItemIcon } from "@passman/utils";
-import { NewItemModalManager } from "@/components/new-item-modal/new-item-modal-manager";
-import { useRefreshTrigger } from "@/lib/refresh-trigger";
 
 export const groupItemsByFirstLetter = (items) => {
   const grouped = {};
@@ -36,19 +34,10 @@ export function PasswordList({ onSelectEntry, selectedEntryId }) {
   const [searchQuery, setSearchQuery] = useState("");
   const { vaultId } = useActiveVault();
   const { items, loading, refetch } = useFetchItems(vaultId);
-  const { subscribe } = useRefreshTrigger();
 
   useEffect(() => {
     refetch();
   }, [vaultId]);
-
-  // Subscribe to refresh events
-  useEffect(() => {
-    const unsubscribe = subscribe(() => {
-      refetch();
-    });
-    return () => unsubscribe();
-  }, [subscribe, refetch]);
 
   // Filter entries based on search query
   const filteredGroupedItems = {};
@@ -69,13 +58,8 @@ export function PasswordList({ onSelectEntry, selectedEntryId }) {
     });
   }
 
-  const handleNewItemCreated = (itemType, data) => {
-    refetch();
-  };
-
   return (
     <div className="flex h-full flex-col border-r">
-      <NewItemModalManager onNewItemCreated={handleNewItemCreated} />
       {/* Search header */}
       <div className="flex items-center gap-2 border-b p-4">
         <div className="relative flex-1">

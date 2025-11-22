@@ -27,9 +27,7 @@ export function SuiProviders({ children }) {
         networks={networkConfig}
         defaultNetwork={DEFAULT_NETWORK}
       >
-        <WalletProvider>
-          {children}
-        </WalletProvider>
+        <WalletProvider>{children}</WalletProvider>
       </SuiClientProvider>
     </QueryClientProvider>
   );

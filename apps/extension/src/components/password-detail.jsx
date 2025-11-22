@@ -6,12 +6,8 @@ import {
   Eye,
   EyeOff,
   MoreHorizontal,
-  Pencil,
   Copy,
   Check,
-  Trash2,
-  Loader2,
-  Share,
   Key,
   Mail,
   User,
@@ -24,58 +20,32 @@ import {
   Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useSealDecrypt, getSealId, useSealEncrypt } from "@/hooks/use-seal";
+import { useSealDecrypt, getSealId } from "@/hooks/use-seal";
 import { useNetworkVariable } from "@passman/utils/network-config";
 import { useSuiWallet } from "@/hooks/use-sui-wallet";
 import useActiveVault from "@/hooks/use-active-vault";
-import {
-  ownerSealApproveMoveCallTx,
-  deleteItemMoveCallTx,
-  editItemMoveCallTx,
-} from "@passman/utils";
+import { ownerSealApproveMoveCallTx } from "@passman/utils";
 import { ITEM_TYPE_DATA, getItemIcon } from "@passman/utils";
-import { PasswordGenerator } from "@/components/password-generator";
-import { ShareModal } from "@/components/share-modal";
-import { uploadToWalrus, fetchFromWalrus } from "@passman/utils";
+import { fetchFromWalrus } from "@passman/utils";
 
-export function PasswordDetail({ entry, onItemDeleted }) {
-  const { encryptData } = useSealEncrypt();
+export function PasswordDetail({ entry }) {
   const isFetchingRef = useRef(false);
   const [showPassword, setShowPassword] = useState({});
   const [decryptedPassword, setDecryptedPassword] = useState(null);
   const [isDecrypting, setIsDecrypting] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [formData, setFormData] = useState({});
   const [copiedFields, setCopiedFields] = useState({});
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [showPasswordGenerator, setShowPasswordGenerator] = useState(false);
-  const [activePasswordField, setActivePasswordField] = useState(null);
-  const [showShareModal, setShowShareModal] = useState(false);
 
-  const { vaultId, capId } = useActiveVault();
+  const { vaultId } = useActiveVault();
   const packageId = useNetworkVariable("passman");
   const {
     client,
     isConnected: isWalletConnected,
-    signAndExecuteTransaction,
     walletAddress,
   } = useSuiWallet();
   const { decryptData } = useSealDecrypt({ packageId });
@@ -87,111 +57,6 @@ export function PasswordDetail({ entry, onItemDeleted }) {
     }));
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
-  };
-
-  const openPasswordGenerator = (fieldName) => {
-    setActivePasswordField(fieldName);
-    setShowPasswordGenerator(true);
-  };
-
-  const handleUseGeneratedPassword = (password) => {
-    if (activePasswordField) {
-      setFormData({
-        ...formData,
-        [activePasswordField]: password,
-      });
-      setShowPasswordGenerator(false);
-    }
-  };
-
-  const handleToggleEdit = async () => {
-    if (isEditing) {
-      const hasChanges = Object.keys(formData).some(
-        (key) => formData[key] !== decryptedPassword?.[key]
-      );
-      if (!hasChanges) {
-        setIsEditing(false);
-        return;
-      }
-      if (!entry?.id?.id || !vaultId || !capId || !entry.nonce) {
-        toast.error("Missing required data for editing");
-        return;
-      }
-
-      try {
-        setIsSaving(true);
-        const { id } = getSealId(vaultId, entry.nonce);
-        const dataBuffer = new TextEncoder().encode(JSON.stringify(formData));
-
-        const { encryptedObject } = await encryptData({
-          packageId,
-          id,
-          data: dataBuffer,
-        });
-
-        if (!encryptedObject) {
-          toast.error("Failed to encrypt data");
-          setIsSaving(false);
-          return;
-        }
-
-        const { blob_id } = await uploadToWalrus({
-          encryptedData: encryptedObject,
-          signAndExecuteTransaction,
-          owner: walletAddress,
-          client,
-        });
-        if (!blob_id) {
-          toast.error("Failed to upload to Walrus");
-          setIsSaving(false);
-          return;
-        }
-
-        const tx = editItemMoveCallTx({
-          capId,
-          name: formData.itemName,
-          walrusBlobId: blob_id,
-          itemId: entry.id.id,
-        });
-
-        signAndExecuteTransaction(
-          { transaction: tx },
-          {
-            onSuccess: async (result) => {
-              await client.waitForTransaction({
-                digest: result.digest,
-                options: { showEffects: true },
-              });
-              toast.success("Item edited successfully");
-              setIsEditing(false);
-              setIsSaving(false);
-              setDecryptedPassword(formData);
-            },
-            onError: (error) => {
-              toast.error(error?.message || "Failed to edit item");
-              setIsEditing(false);
-              setIsSaving(false);
-            },
-          }
-        );
-      } catch (error) {
-        toast.error(
-          `Failed to edit item: ${error?.message || "Unknown error"}`
-        );
-        setIsSaving(false);
-      }
-    } else {
-      setIsEditing(true);
-      setFormData(decryptedPassword || {});
-    }
-  };
-
   const handleCopyToClipboard = (fieldName, value) => {
     if (value) {
       navigator.clipboard.writeText(value).then(() => {
@@ -201,49 +66,6 @@ export function PasswordDetail({ entry, onItemDeleted }) {
         }, 2000);
         toast.success(`${fieldName} copied to clipboard`);
       });
-    }
-  };
-
-  const handleDeleteClick = () => {
-    setShowDeleteDialog(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!entry?.id?.id || !vaultId || !capId) {
-      toast.error("Missing required data for deletion");
-      return;
-    }
-
-    setIsDeleting(true);
-    try {
-      const tx = deleteItemMoveCallTx({
-        vaultId,
-        capId,
-        itemId: entry.id.id,
-      });
-
-      signAndExecuteTransaction(
-        { transaction: tx },
-        {
-          onSuccess: async (result) => {
-            await client.waitForTransaction({
-              digest: result.digest,
-              options: { showEffects: true },
-            });
-            toast.success("Item deleted successfully");
-            setShowDeleteDialog(false);
-            onItemDeleted && onItemDeleted(entry.id.id);
-            setIsDeleting(false);
-          },
-          onError: (error) => {
-            toast.error(error?.message || "Failed to delete item");
-            setIsDeleting(false);
-          },
-        }
-      );
-    } catch (error) {
-      toast.error(error?.message || "Failed to delete item");
-      setIsDeleting(false);
     }
   };
 
@@ -274,7 +96,6 @@ export function PasswordDetail({ entry, onItemDeleted }) {
       const decodedData = new TextDecoder().decode(decrypted);
       const parsedData = JSON.parse(decodedData);
       setDecryptedPassword(parsedData);
-      setFormData(parsedData);
     } catch (err) {
       toast.error(`Unexpected error: ${err?.message || "Unknown error"}`);
     } finally {
@@ -289,10 +110,6 @@ export function PasswordDetail({ entry, onItemDeleted }) {
     }
     decryptItem();
   }, [entry]);
-
-  const handleShareClick = () => {
-    setShowShareModal(true);
-  };
 
   const renderFormFields = () => {
     if (!entry?.category) return null;
@@ -356,148 +173,81 @@ export function PasswordDetail({ entry, onItemDeleted }) {
                 </label>
               </div>
 
-              {isEditing ? (
-                <div className="relative">
-                  {isPassword ? (
-                    <div className="relative">
-                      <Input
-                        id={field.name}
-                        name={field.name}
-                        type={isVisible ? "text" : "password"}
-                        value={formData[field.name] || ""}
-                        onChange={handleInputChange}
-                        className="pr-24 min-h-[44px] rounded-lg border-border bg-background/50 hover:bg-background transition-colors focus:border-primary"
-                      />
-                      <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 px-2 text-muted-foreground hover:text-foreground transition-colors"
-                          onClick={() => togglePasswordVisibility(field.name)}
-                        >
-                          {isVisible ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                          <span className="sr-only">
-                            {isVisible ? "Hide" : "Show"} {field.label}
-                          </span>
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                          onClick={() => openPasswordGenerator(field.name)}
-                        >
-                          Generate
-                        </Button>
+              <div className="relative">
+                <div className="flex items-center min-h-[44px] rounded-lg border border-border bg-background/50 hover:bg-background transition-colors group-hover:border-border/80">
+                  <div className="flex-1 px-4 py-3">
+                    {field.type === "textarea" ? (
+                      <div className="whitespace-pre-wrap text-sm leading-relaxed max-h-[300px] overflow-auto pr-2">
+                        {fieldValue}
                       </div>
-                    </div>
-                  ) : field.type === "textarea" ? (
-                    <textarea
-                      id={field.name}
-                      name={field.name}
-                      value={formData[field.name] || ""}
-                      onChange={handleInputChange}
-                      className="w-full min-h-[200px] max-h-[500px] rounded-lg border border-border bg-background/50 hover:bg-background transition-colors px-4 py-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2  "
-                      placeholder={`Enter ${field.label.toLowerCase()}...`}
-                    />
-                  ) : (
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      type={field.type}
-                      value={formData[field.name] || ""}
-                      onChange={handleInputChange}
-                      className={`min-h-[44px] rounded-lg border-border bg-background/50 hover:bg-background transition-colors focus:border-primary ${
-                        field.name === "walletAddress"
-                          ? "font-mono text-sm"
-                          : ""
-                      }`}
-                      placeholder={`Enter ${field.label.toLowerCase()}...`}
-                    />
-                  )}
-                </div>
-              ) : (
-                <div className="relative">
-                  <div className="flex items-center min-h-[44px] rounded-lg border border-border bg-background/50 hover:bg-background transition-colors group-hover:border-border/80">
-                    <div className="flex-1 px-4 py-3">
-                      {field.type === "textarea" ? (
-                        <div className="whitespace-pre-wrap text-sm leading-relaxed max-h-[300px] overflow-auto pr-2">
-                          {fieldValue}
-                        </div>
-                      ) : field.name === "walletAddress" ? (
-                        <div className="text-sm font-mono break-all">
-                          {isPassword && !isVisible ? (
-                            "••••••••••••••••"
-                          ) : (
-                            <>
-                              <span className="block sm:hidden">
-                                {fieldValue
-                                  ? `${fieldValue.slice(
-                                      0,
-                                      8
-                                    )}...${fieldValue.slice(-8)}`
-                                  : ""}
-                              </span>
-                              <span className="hidden sm:block">
-                                {fieldValue}
-                              </span>
-                            </>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-sm font-mono">
-                          {isPassword && !isVisible
-                            ? "••••••••••••••••"
-                            : fieldValue}
-                        </div>
-                      )}
-                    </div>
+                    ) : field.name === "walletAddress" ? (
+                      <div className="text-sm font-mono break-all">
+                        {isPassword && !isVisible ? (
+                          "••••••••••••••••"
+                        ) : (
+                          <>
+                            <span className="block sm:hidden">
+                              {fieldValue
+                                ? `${fieldValue.slice(
+                                    0,
+                                    8
+                                  )}...${fieldValue.slice(-8)}`
+                                : ""}
+                            </span>
+                            <span className="hidden sm:block">
+                              {fieldValue}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-sm font-mono">
+                        {isPassword && !isVisible
+                          ? "••••••••••••••••"
+                          : fieldValue}
+                      </div>
+                    )}
+                  </div>
 
-                    <div className="flex items-center gap-1 px-2">
-                      {isPassword && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 px-2 text-muted-foreground hover:text-foreground transition-colors"
-                          onClick={() => togglePasswordVisibility(field.name)}
-                        >
-                          {isVisible ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                          <span className="sr-only">
-                            {isVisible ? "Hide" : "Show"} {field.label}
-                          </span>
-                        </Button>
-                      )}
-
+                  <div className="flex items-center gap-1 px-2">
+                    {isPassword && (
                       <Button
                         variant="ghost"
                         size="sm"
                         className="h-8 px-2 text-muted-foreground hover:text-foreground transition-colors"
-                        onClick={() =>
-                          handleCopyToClipboard(field.name, fieldValue)
-                        }
+                        onClick={() => togglePasswordVisibility(field.name)}
                       >
-                        {isCopied ? (
-                          <Check className="h-4 w-4 text-green-600" />
+                        {isVisible ? (
+                          <EyeOff className="h-4 w-4" />
                         ) : (
-                          <Copy className="h-4 w-4" />
+                          <Eye className="h-4 w-4" />
                         )}
                         <span className="sr-only">
-                          {isCopied ? "Copied" : "Copy"} {field.label}
+                          {isVisible ? "Hide" : "Show"} {field.label}
                         </span>
                       </Button>
-                    </div>
+                    )}
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-muted-foreground hover:text-foreground transition-colors"
+                      onClick={() =>
+                        handleCopyToClipboard(field.name, fieldValue)
+                      }
+                    >
+                      {isCopied ? (
+                        <Check className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                      <span className="sr-only">
+                        {isCopied ? "Copied" : "Copy"} {field.label}
+                      </span>
+                    </Button>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           );
         })}
@@ -519,42 +269,6 @@ export function PasswordDetail({ entry, onItemDeleted }) {
             <h2 className="text-lg font-semibold">{entry.name}</h2>
           </div>
           <div className="flex items-center gap-2">
-            {isEditing && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 px-2"
-                onClick={() => {
-                  setIsEditing(false);
-                  setFormData(decryptedPassword || {});
-                }}
-              >
-                Cancel
-              </Button>
-            )}
-            <Button
-              variant={isEditing ? "default" : "outline"}
-              size="sm"
-              className="h-7 px-2"
-              onClick={handleToggleEdit}
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : isEditing ? (
-                <>
-                  <Check className="h-4 w-4" />
-                  Save
-                </>
-              ) : (
-                <>
-                  <Pencil className="h-4 w-4" />
-                  Edit
-                </>
-              )}
-            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon">
@@ -562,10 +276,6 @@ export function PasswordDetail({ entry, onItemDeleted }) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleShareClick}>
-                  <Share className="h-4 w-4 mr-2" />
-                  Share
-                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() =>
                     handleCopyToClipboard(
@@ -576,13 +286,6 @@ export function PasswordDetail({ entry, onItemDeleted }) {
                 >
                   <Copy className="h-4 w-4 mr-2" />
                   Copy all data
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  onClick={handleDeleteClick}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -627,76 +330,6 @@ export function PasswordDetail({ entry, onItemDeleted }) {
           </div>
         )}
       </div>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete Item</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete "
-              {decryptedPassword?.itemName || entry.name}"? This action cannot
-              be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex flex-row justify-end gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => setShowDeleteDialog(false)}
-              disabled={isDeleting}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDeleteConfirm}
-              disabled={isDeleting}
-            >
-              {isDeleting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                <>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Share Dialog */}
-      {showShareModal && (
-        <ShareModal
-          isOpen={showShareModal}
-          onClose={() => setShowShareModal(false)}
-          entry={entry}
-        />
-      )}
-
-      {/* Password Generator Dialog */}
-      {showPasswordGenerator && (
-        <Dialog
-          open={showPasswordGenerator}
-          onOpenChange={setShowPasswordGenerator}
-        >
-          <DialogContent
-            className="sm:max-w-md bg-black border-zinc-800"
-            hideCloseButton
-          >
-            <DialogHeader className="sr-only">
-              <DialogTitle>Password Generator</DialogTitle>
-            </DialogHeader>
-            <PasswordGenerator
-              onCancel={() => setShowPasswordGenerator(false)}
-              onUsePassword={handleUseGeneratedPassword}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
     </>
   );
 }
