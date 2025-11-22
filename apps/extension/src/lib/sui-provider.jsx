@@ -1,6 +1,6 @@
 "use client";
 
-import { SuiClientProvider } from "@mysten/dapp-kit";
+import { SuiClientProvider, WalletProvider } from "@mysten/dapp-kit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React, { useState } from "react";
 import { networkConfig, DEFAULT_NETWORK } from "@passman/utils/network-config";
@@ -27,7 +27,9 @@ export function SuiProviders({ children }) {
         networks={networkConfig}
         defaultNetwork={DEFAULT_NETWORK}
       >
-        {children}
+        <WalletProvider>
+          {children}
+        </WalletProvider>
       </SuiClientProvider>
     </QueryClientProvider>
   );

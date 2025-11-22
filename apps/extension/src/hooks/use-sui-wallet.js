@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { walrus } from "@mysten/walrus";
 import { NETWORK } from "@passman/utils";
 import { useZkLogin } from "@/hooks/use-zk-login";
+import { enokiFlow } from "@/lib/enoki";
 
 export function useSuiWallet() {
   const baseClient = useSuiClient();
@@ -36,6 +37,13 @@ export function useSuiWallet() {
     throw new Error("Transaction execution is not supported in the extension");
   };
 
+  const signPersonalMessage = async ({ message }) => {
+    if (!isLoggedIn) throw new Error("No user logged in");
+    const keypair = await enokiFlow.getKeypair({ network: NETWORK });
+    const { signature } = await keypair.signPersonalMessage(message);
+    return { signature };
+  };
+
   const isConnected = isLoggedIn;
   const walletAddress = zkLoginAddress;
 
@@ -45,6 +53,7 @@ export function useSuiWallet() {
     client,
     currentAccount,
     signAndExecuteTransaction,
+    signPersonalMessage,
     isConnected,
     walletAddress,
     connect: login,

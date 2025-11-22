@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { SealClient, SessionKey, EncryptedObject } from "@mysten/seal";
 import { fromHex, toHex } from "@mysten/sui/utils";
-import { useSignPersonalMessage, useCurrentAccount } from "@mysten/dapp-kit";
 
 import { useSuiWallet } from "./use-sui-wallet";
 import { DEFAULT_NETWORK } from "@passman/utils/network-config";
@@ -95,11 +94,13 @@ export const useSealEncrypt = ({ verifyKeyServers = false } = {}) => {
 };
 
 export const useSealDecrypt = ({ packageId, ttlMin = 10 } = {}) => {
-  const { client: suiClient } = useSuiWallet();
+  const {
+    client: suiClient,
+    currentAccount: account,
+    signPersonalMessage,
+  } = useSuiWallet();
 
-  const { mutate: signPersonalMessage } = useSignPersonalMessage();
   const { exportedSessionKey, setExportedSessionKey } = useKeySessionStore();
-  const account = useCurrentAccount();
 
   const sealClient = useMemo(() => {
     if (!suiClient) return null;
@@ -194,36 +195,20 @@ export const useSealDecrypt = ({ packageId, ttlMin = 10 } = {}) => {
         suiClient,
       });
 
-      return new Promise((resolve, reject) => {
-        signPersonalMessage(
-          { message: newSessionKey.getPersonalMessage() },
-          {
-            onSuccess: async (result) => {
-              try {
-                await newSessionKey.setPersonalMessageSignature(
-                  result.signature
-                );
-                setExportedSessionKey(newSessionKey.export());
-
-                const decrypted = await sealClient.decrypt({
-                  data: encryptedObject,
-                  sessionKey: newSessionKey,
-                  txBytes,
-                });
-
-                resolve(decrypted);
-              } catch (error) {
-                console.error("Decryption error in success handler:", error);
-                reject(error);
-              }
-            },
-            onError: (err) => {
-              console.error("Personal message signing error:", err);
-              reject(err);
-            },
-          }
-        );
+      const { signature } = await signPersonalMessage({
+        message: newSessionKey.getPersonalMessage(),
       });
+
+      await newSessionKey.setPersonalMessageSignature(signature);
+      setExportedSessionKey(newSessionKey.export());
+
+      const decrypted = await sealClient.decrypt({
+        data: encryptedObject,
+        sessionKey: newSessionKey,
+        txBytes,
+      });
+
+      return decrypted;
     } catch (err) {
       console.error("Decryption error:", err);
       throw err;

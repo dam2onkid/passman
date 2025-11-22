@@ -2,6 +2,8 @@ import { create } from "zustand";
 
 const useKeySessionStore = create((set) => ({
   sessionKeys: new Map(),
+  exportedSessionKey: null,
+  setExportedSessionKey: (key) => set({ exportedSessionKey: key }),
   setSessionKey: (vaultId, key) =>
     set((state) => {
       const newKeys = new Map(state.sessionKeys);
@@ -18,7 +20,8 @@ const useKeySessionStore = create((set) => ({
       newKeys.delete(vaultId);
       return { sessionKeys: newKeys };
     }),
-  clearAllSessionKeys: () => set({ sessionKeys: new Map() }),
+  clearAllSessionKeys: () =>
+    set({ sessionKeys: new Map(), exportedSessionKey: null }),
 }));
 
 export default useKeySessionStore;
