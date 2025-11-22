@@ -47,7 +47,7 @@ export default function LoginPage() {
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <Image
-              src="/passman.svg"
+              src="/passman.png"
               alt="Passman"
               width={32}
               height={32}

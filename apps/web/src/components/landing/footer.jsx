@@ -11,7 +11,7 @@ export function Footer() {
           <div className="md:col-span-2">
             <Link href="/" className="flex items-center space-x-2 mb-4">
               <Image
-                src="/passman.svg"
+                src="/passman.png"
                 alt="Passman"
                 width={32}
                 height={32}

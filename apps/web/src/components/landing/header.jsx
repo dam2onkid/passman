@@ -16,7 +16,7 @@ export function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
             <Image
-              src="/passman.svg"
+              src="/passman.png"
               alt="Passman"
               width={32}
               height={32}
