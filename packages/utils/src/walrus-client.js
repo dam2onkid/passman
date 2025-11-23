@@ -4,12 +4,6 @@ import { get, set } from "idb-keyval";
 
 export async function uploadToWalrus({ encryptedData, owner, epochs = 5 }) {
   try {
-    console.log(
-      "[UPLOAD] encryptedData type:",
-      encryptedData?.constructor.name
-    );
-    console.log("[UPLOAD] encryptedData length:", encryptedData?.length);
-
     if (!(encryptedData instanceof Uint8Array)) {
       throw new Error(
         `Invalid data type for upload: ${encryptedData?.constructor.name}. Expected Uint8Array`
@@ -50,8 +44,6 @@ export async function uploadToWalrus({ encryptedData, owner, epochs = 5 }) {
     }
 
     const result = await response.json();
-    console.log("[UPLOAD] Upload result:", result);
-
     return result;
   } catch (error) {
     console.error("Error uploading to Walrus:", error);
@@ -61,12 +53,10 @@ export async function uploadToWalrus({ encryptedData, owner, epochs = 5 }) {
 
 export async function fetchFromWalrus(patchId, client) {
   try {
-    console.log("[FETCH] Fetching from Walrus:", patchId);
     // Try to get from cache first
     try {
       const cachedData = await get(patchId);
       if (cachedData) {
-        console.log("[FETCH] Cache hit for:", patchId);
         return cachedData;
       }
     } catch (err) {

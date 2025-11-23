@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { SealClient, SessionKey, EncryptedObject } from "@mysten/seal";
+import { SealClient, SessionKey } from "@mysten/seal";
 import { fromHex, toHex } from "@mysten/sui/utils";
 
 import { useSuiWallet } from "./use-sui-wallet";
@@ -60,16 +60,6 @@ export const useSealEncrypt = ({ verifyKeyServers = false } = {}) => {
         data,
       });
 
-      console.log(
-        "[ENCRYPT] encryptedObject type:",
-        encryptedObject.constructor.name
-      );
-      console.log("[ENCRYPT] encryptedObject length:", encryptedObject.length);
-      console.log(
-        "[ENCRYPT] First 50 bytes:",
-        Array.from(encryptedObject.slice(0, 50))
-      );
-
       if (!(encryptedObject instanceof Uint8Array)) {
         throw new Error(
           `Expected Uint8Array, got ${encryptedObject.constructor.name}`
@@ -78,7 +68,6 @@ export const useSealEncrypt = ({ verifyKeyServers = false } = {}) => {
 
       return { encryptedObject, key };
     } catch (err) {
-      console.error("Encryption error:", err);
       setError(err.message || "Failed to encrypt data");
       return null;
     } finally {
@@ -138,41 +127,6 @@ export const useSealDecrypt = ({ packageId, ttlMin = 10 } = {}) => {
       throw new Error("encryptedObject is empty");
     }
 
-    let parsedEncryptedObject;
-    try {
-      console.log(
-        "[DECRYPT] Before parsing - encryptedObject type:",
-        encryptedObject?.constructor.name
-      );
-      console.log(
-        "[DECRYPT] Before parsing - encryptedObject length:",
-        encryptedObject?.length
-      );
-      console.log(
-        "[DECRYPT] Before parsing - First 50 bytes:",
-        Array.from(encryptedObject.slice(0, 50))
-      );
-
-      parsedEncryptedObject = EncryptedObject.parse(encryptedObject);
-      console.log("[DECRYPT] Parsed encrypted object:", {
-        threshold: parsedEncryptedObject.threshold,
-        services: parsedEncryptedObject.services,
-        id: parsedEncryptedObject.id,
-      });
-
-      const serverObjectIds = parsedEncryptedObject.services.map(
-        ([serviceId]) => serviceId
-      );
-      console.log("[DECRYPT] Required key servers:", serverObjectIds);
-      console.log(
-        "[DECRYPT] Available key servers:",
-        getAllowlistedKeyServers(DEFAULT_NETWORK)
-      );
-    } catch (parseError) {
-      console.error("[DECRYPT] Failed to parse encrypted object:", parseError);
-      throw new Error(`Invalid encrypted object format: ${parseError.message}`);
-    }
-
     try {
       if (isValidSessionKey(exportedSessionKey)) {
         const sessionKey = await SessionKey.import(
@@ -210,7 +164,6 @@ export const useSealDecrypt = ({ packageId, ttlMin = 10 } = {}) => {
 
       return decrypted;
     } catch (err) {
-      console.error("Decryption error:", err);
       throw err;
     }
   };

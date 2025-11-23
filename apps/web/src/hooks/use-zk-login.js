@@ -22,7 +22,6 @@ export function useZkLogin() {
         setIsEnoki(true);
         try {
           const jwt = await currentWallet.features["enoki:getJwt"].getJwt();
-          console.log("jwt", jwt);
           setZkLoginJwt(jwt);
           return;
         } catch (error) {
@@ -36,10 +35,8 @@ export function useZkLogin() {
         const storage = localStorage.getItem(
           "sui-dapp-kit:wallet-connection-info"
         );
-        console.log("storage", storage);
         if (storage) {
           const info = JSON.parse(storage);
-          console.log("info", info);
           const lastConnectedWalletName =
             info?.state?.lastConnectedWalletName || "";
 

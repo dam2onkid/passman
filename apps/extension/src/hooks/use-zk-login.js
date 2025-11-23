@@ -32,10 +32,6 @@ export function useZkLogin() {
         const { pending_auth_url } =
           await chrome.storage.local.get("pending_auth_url");
         if (pending_auth_url) {
-          console.log(
-            "[zkLogin] Processing pending auth URL:",
-            pending_auth_url
-          );
           setLoggingIn(true);
           toast.info("Processing login...");
 
@@ -43,19 +39,13 @@ export function useZkLogin() {
             const urlObj = new URL(pending_auth_url);
             const hash = urlObj.hash;
             await enokiFlow.handleAuthCallback(hash);
-            console.log("[zkLogin] handleAuthCallback successful");
             await chrome.storage.local.remove("pending_auth_url");
 
             const session = await enokiFlow.getSession();
-            console.log(
-              "[zkLogin] Session after callback:",
-              session ? "exists" : "null"
-            );
 
             if (session && session.jwt) {
               const keypair = await enokiFlow.getKeypair({ network: NETWORK });
               const address = keypair.toSuiAddress();
-              console.log("[zkLogin] Address:", address);
 
               setZkLoginAddress(address);
               setLoggedIn(true);
@@ -64,10 +54,6 @@ export function useZkLogin() {
               throw new Error("No session or JWT after callback");
             }
           } catch (callbackError) {
-            console.error(
-              "[zkLogin] Callback processing error:",
-              callbackError
-            );
             await chrome.storage.local.remove("pending_auth_url");
             throw callbackError;
           }
@@ -85,12 +71,6 @@ export function useZkLogin() {
           setLoggedIn(true);
         }
       } catch (e) {
-        console.error("[zkLogin] Failed to restore Enoki session:", e);
-        console.error("[zkLogin] Error details:", {
-          message: e.message,
-          stack: e.stack,
-          name: e.name,
-        });
         setLoggingIn(false);
         toast.error(
           `Failed to complete login: ${e.message || "Unknown error"}`
@@ -108,18 +88,6 @@ export function useZkLogin() {
       const extensionId = chrome.runtime.id;
       const redirectUrl = `https://${extensionId}.chromiumapp.org/auth/callback`;
 
-      console.log("[zkLogin] Extension ID:", extensionId);
-      console.log("[zkLogin] Redirect URL:", redirectUrl);
-      console.log(
-        "[zkLogin] Google Client ID:",
-        import.meta.env.VITE_GOOGLE_CLIENT_ID
-      );
-      console.log(
-        "[zkLogin] Enoki API Key:",
-        import.meta.env.VITE_ENOKI_PUBLIC_KEY
-      );
-      console.log("[zkLogin] Network:", NETWORK);
-
       const authUrl = await enokiFlow.createAuthorizationURL({
         provider: "google",
         clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID,
@@ -127,13 +95,10 @@ export function useZkLogin() {
         network: NETWORK,
       });
 
-      console.log("[zkLogin] Auth URL created:", authUrl);
-
       // Open the OAuth flow in a new tab
       // The service worker will detect the callback and handle it
       chrome.tabs.create({ url: authUrl });
     } catch (error) {
-      console.error("[zkLogin] Login failed:", error);
       toast.error("Failed to initiate login");
       setLoggingIn(false);
     }
@@ -157,7 +122,6 @@ export function useZkLogin() {
       toast.success("Successfully logged in with Google!");
       return address;
     } catch (error) {
-      console.error("Complete login failed:", error);
       toast.error(
         "Failed to complete login: " + (error.message || "Unknown error")
       );

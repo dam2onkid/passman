@@ -76,8 +76,6 @@ export function PasswordDetail({ entry }) {
 
     try {
       const encryptedData = await fetchFromWalrus(entry.walrus_blob_id, client);
-      console.log("encryptedData", encryptedData);
-
       if (!encryptedData || encryptedData.length === 0) {
         throw new Error("Failed to fetch encrypted data from Walrus");
       }
