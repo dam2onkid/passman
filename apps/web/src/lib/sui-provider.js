@@ -1,6 +1,10 @@
 "use client";
 
-import { SuiClientProvider, WalletProvider, useSuiClientContext } from "@mysten/dapp-kit";
+import {
+  SuiClientProvider,
+  WalletProvider,
+  useSuiClientContext,
+} from "@mysten/dapp-kit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React, { useState, useEffect } from "react";
 import { networkConfig, DEFAULT_NETWORK } from "@passman/utils/network-config";

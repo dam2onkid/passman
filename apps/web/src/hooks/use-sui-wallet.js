@@ -2,6 +2,7 @@
 
 import {
   useCurrentAccount,
+  useCurrentWallet,
   useSuiClient,
   useConnectWallet,
   useDisconnectWallet,
@@ -12,6 +13,7 @@ import { walrus } from "@mysten/walrus";
 import { NETWORK } from "@passman/utils";
 import { useZkLogin } from "./use-zk-login";
 import { toB64, fromB64 } from "@mysten/sui/utils";
+import { Transaction } from "@mysten/sui/transactions";
 import {
   getSponsoredTransaction,
   executeSponsoredTransaction,
@@ -20,6 +22,7 @@ import {
 export function useSuiWallet() {
   const baseClient = useSuiClient();
   const currentAccount = useCurrentAccount();
+  const { currentWallet } = useCurrentWallet();
   const { isZkLoggedIn, zkLoginAddress, zkLoginJwt } = useZkLogin();
 
   const client = useMemo(() => {
@@ -59,7 +62,7 @@ export function useSuiWallet() {
 
   const handleSignAndExecuteTransaction = useCallback(
     async (input, options) => {
-      if (isZkLoggedIn && zkLoginJwt) {
+      if (isZkLoggedIn) {
         try {
           const transaction = input.transaction;
 
@@ -75,11 +78,19 @@ export function useSuiWallet() {
             zkLoginJwt
           );
 
-          const signatureResult = await currentAccount.wallet.features[
+          if (!currentWallet) {
+            throw new Error("Wallet not connected");
+          }
+
+          const transactionBytes = fromB64(sponsored.bytes);
+          const sponsoredTransaction = Transaction.from(transactionBytes);
+
+          const signatureResult = await currentWallet.features[
             "sui:signTransaction"
           ].signTransaction({
-            transaction: sponsored.bytes,
+            transaction: sponsoredTransaction,
             account: currentAccount,
+            chain: `sui:${NETWORK}`,
           });
 
           const { result } = await executeSponsoredTransaction(
@@ -109,6 +120,7 @@ export function useSuiWallet() {
       walletAddress,
       baseClient,
       currentAccount,
+      currentWallet,
       signAndExecuteWalletTransaction,
     ]
   );
