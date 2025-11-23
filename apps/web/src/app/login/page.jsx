@@ -19,12 +19,6 @@ export default function LoginPage() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
 
-  // We need a short delay or check to avoid flash of login screen if already connected
-  // but useSuiWallet should be fast.
-
-  // However, hydration mismatch might occur if we redirect immediately in render.
-  // Use useEffect.
-
   useEffect(() => {
     if (isConnected) {
       router.push("/dashboard");
@@ -60,9 +54,7 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-col gap-4">
-            <WalletConnectButton isSidebar={false} className="w-full" />
-          </div>
+          <WalletConnectButton isSidebar={false} />
         </CardContent>
       </Card>
     </div>

@@ -21,7 +21,6 @@ import {
 } from "lucide-react";
 
 import { WalletConnectButton } from "@/components/wallet-connect-button";
-import { ZkLoginButton } from "@/components/zk-login-button";
 import { Button } from "@/components/ui/button";
 import {
   Card,

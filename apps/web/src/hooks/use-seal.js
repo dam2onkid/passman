@@ -6,8 +6,6 @@ import { useSignPersonalMessage, useCurrentAccount } from "@mysten/dapp-kit";
 import { useSuiWallet } from "./use-sui-wallet";
 import { DEFAULT_NETWORK } from "@passman/utils/network-config";
 import useKeySessionStore from "@/store/key-session-store";
-import { enokiFlow } from "@/lib/enoki";
-import { useZkLoginStore } from "@/store/zk-login-store";
 const KEY_SERVERS = {
   testnet: [
     "0x73d05d62c18d9374e3ea529e8e0ed6161da1a141a94d3f76ae3fe4e99356db75",
@@ -102,8 +100,7 @@ export const useSealDecrypt = ({ packageId, ttlMin = 10 } = {}) => {
   const { mutate: signPersonalMessage } = useSignPersonalMessage();
   const { exportedSessionKey, setExportedSessionKey } = useKeySessionStore();
   const account = useCurrentAccount();
-  const { zkLoginAddress } = useZkLoginStore();
-  const currentAddress = account?.address || zkLoginAddress;
+  const currentAddress = account?.address;
 
   const sealClient = useMemo(() => {
     if (!suiClient) return null;
@@ -197,31 +194,6 @@ export const useSealDecrypt = ({ packageId, ttlMin = 10 } = {}) => {
         ttlMin,
         suiClient,
       });
-
-      if (!account?.address && zkLoginAddress) {
-        try {
-          const keypair = await enokiFlow.getKeypair({
-            network: DEFAULT_NETWORK,
-          });
-          const { signature } = await keypair.signPersonalMessage(
-            newSessionKey.getPersonalMessage()
-          );
-
-          await newSessionKey.setPersonalMessageSignature(signature);
-          setExportedSessionKey(newSessionKey.export());
-
-          const decrypted = await sealClient.decrypt({
-            data: encryptedObject,
-            sessionKey: newSessionKey,
-            txBytes,
-          });
-
-          return decrypted;
-        } catch (error) {
-          console.error("ZkLogin signing/decryption error:", error);
-          throw error;
-        }
-      }
 
       return new Promise((resolve, reject) => {
         signPersonalMessage(

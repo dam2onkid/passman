@@ -11,20 +11,16 @@ import { useCallback, useMemo } from "react";
 import { walrus } from "@mysten/walrus";
 import { NETWORK } from "@passman/utils";
 import { useZkLogin } from "./use-zk-login";
+import { toB64, fromB64 } from "@mysten/sui/utils";
+import {
+  getSponsoredTransaction,
+  executeSponsoredTransaction,
+} from "@/app/actions/enoki";
 
 export function useSuiWallet() {
   const baseClient = useSuiClient();
   const currentAccount = useCurrentAccount();
-
-  // zkLogin hooks
-  const {
-    zkLoginAddress,
-    isLoggedIn: isZkLoggedIn,
-    executeZkLoginTransaction,
-    login: loginZk,
-    logout: logoutZk,
-    isLoggingIn: isZkLoggingIn,
-  } = useZkLogin();
+  const { isZkLoggedIn, zkLoginAddress, zkLoginJwt } = useZkLogin();
 
   const client = useMemo(() => {
     return baseClient.$extend(
@@ -35,26 +31,21 @@ export function useSuiWallet() {
         uploadRelay: {
           host: "https://upload-relay.testnet.walrus.space",
           sendTip: {
-            max: 1_000, // MIST (very little SUI - we have this for gas!)
+            max: 1_000,
           },
         },
       })
     );
   }, [baseClient]);
 
-  const { mutate: signAndExecuteWalletTransaction } =
+  const { mutateAsync: signAndExecuteWalletTransaction } =
     useSignAndExecuteTransaction();
 
   const { mutate: connect } = useConnectWallet();
   const { mutate: disconnect } = useDisconnectWallet();
 
-  const isConnected = Boolean(currentAccount) || isZkLoggedIn;
-  const walletAddress = currentAccount?.address || zkLoginAddress;
-
-  // Normalize currentAccount to include zkLogin user if active
-  const activeAccount =
-    currentAccount ||
-    (isZkLoggedIn ? { address: zkLoginAddress, label: "zkLogin" } : null);
+  const isConnected = Boolean(currentAccount);
+  const walletAddress = currentAccount?.address;
 
   const handleConnect = useCallback(() => {
     if (!isConnected) {
@@ -63,53 +54,73 @@ export function useSuiWallet() {
   }, [connect, isConnected]);
 
   const handleDisconnect = useCallback(() => {
-    if (currentAccount) {
-      disconnect();
-    }
-    if (isZkLoggedIn) {
-      logoutZk();
-    }
-  }, [disconnect, currentAccount, isZkLoggedIn, logoutZk]);
+    disconnect();
+  }, [disconnect]);
 
   const handleSignAndExecuteTransaction = useCallback(
     async (input, options) => {
-      if (isZkLoggedIn) {
-        // For zkLogin, input is expected to contain { transactionBlock }
-        // Adapt if input is different or has transaction property
-        const tx = input.transaction || input.transactionBlock;
-        if (!tx) {
-          throw new Error("Transaction block is required");
-        }
+      if (isZkLoggedIn && zkLoginJwt) {
+        try {
+          const transaction = input.transaction;
 
-        return executeZkLoginTransaction({ transactionBlock: tx })
-          .then((result) => {
-            if (options?.onSuccess) options.onSuccess(result);
-            return result;
-          })
-          .catch((error) => {
-            console.error("Error executing zkLogin transaction:", error);
-            if (options?.onError) options.onError(error);
-            throw error;
+          transaction.setSender(walletAddress);
+          const transactionBlockKindBytes = await transaction.build({
+            client: baseClient,
+            onlyTransactionKind: true,
           });
+
+          const { sponsored } = await getSponsoredTransaction(
+            toB64(transactionBlockKindBytes),
+            walletAddress,
+            zkLoginJwt
+          );
+
+          const signatureResult = await currentAccount.wallet.features[
+            "sui:signTransaction"
+          ].signTransaction({
+            transaction: sponsored.bytes,
+            account: currentAccount,
+          });
+
+          const { result } = await executeSponsoredTransaction(
+            sponsored.digest,
+            signatureResult.signature
+          );
+
+          if (options?.onSuccess) {
+            options.onSuccess(result);
+          }
+
+          return result;
+        } catch (error) {
+          console.error("Sponsored transaction failed:", error);
+          if (options?.onError) {
+            options.onError(error);
+          }
+          throw error;
+        }
       } else {
-        // Wallet adapter
         return signAndExecuteWalletTransaction(input, options);
       }
     },
-    [isZkLoggedIn, executeZkLoginTransaction, signAndExecuteWalletTransaction]
+    [
+      isZkLoggedIn,
+      zkLoginJwt,
+      walletAddress,
+      baseClient,
+      currentAccount,
+      signAndExecuteWalletTransaction,
+    ]
   );
 
   return {
     client,
-    currentAccount: activeAccount,
+    currentAccount,
     signAndExecuteTransaction: handleSignAndExecuteTransaction,
     isConnected,
     walletAddress,
     connect: handleConnect,
     disconnect: handleDisconnect,
-    // Expose zkLogin specific methods/state if needed
     isZkLoggedIn,
-    isZkLoggingIn,
-    loginZk,
   };
 }
