@@ -1,0 +1,46 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# 🔍 KHÔNG NÊN ignore lockfile, nên xoá dòng dưới nếu đang có
+# .pnpm-lock.yaml
+
+# testing
+coverage/
+
+# next.js (mọi app)
+/*.next/   # nếu có .next ở root
+.next/     # ignore .next ở mọi thư mục (apps/*/.next, packages/*/.next)
+out/
+
+# turborepo cache
+.turbo/
+
+# production
+build/
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (cân nhắc nếu muốn commit riêng)
+.env*
+
+# vercel
+.vercel/
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts

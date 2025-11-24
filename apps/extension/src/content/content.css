@@ -1,0 +1,25 @@
+.passman-autofill-icon {
+  width: 24px;
+  height: 24px;
+  color: #666;
+}
+
+.passman-autofill-icon:hover {
+  color: #333;
+}
+
+#passman-autofill-container {
+  all: initial;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2147483647;
+  pointer-events: none;
+}
+
+#passman-autofill-container * {
+  pointer-events: auto;
+}
+

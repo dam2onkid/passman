@@ -1,0 +1,53 @@
+{
+  "manifest_version": 3,
+  "name": "Passman - Sui Password Manager",
+  "version": "1.0.0",
+  "description": "Secure password manager on Sui blockchain with auto-fill capabilities",
+  "action": {
+    "default_popup": "index.html",
+    "default_icon": {
+      "16": "public/icons/passman.png",
+      "48": "public/icons/passman.png",
+      "128": "public/icons/passman.png"
+    }
+  },
+  "icons": {
+    "16": "public/icons/passman.png",
+    "48": "public/icons/passman.png",
+    "128": "public/icons/passman.png"
+  },
+  "permissions": [
+    "storage",
+    "activeTab",
+    "tabs",
+    "notifications"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "src/content/content.jsx"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "src/background/service-worker.js",
+    "type": "module"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "public/icons/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
+}

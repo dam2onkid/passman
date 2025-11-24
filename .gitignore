@@ -1,7 +1,28 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Turborepo / Monorepo
 
-# dependencies
-/node_modules
+# Output folders for all apps/packages
+**/node_modules/
+**/dist/
+**/build/
+**/.turbo/
+**/.cache/
+
+# Editor stuff
+.DS_Store
+*.log
+
+# Next.js
+
+# Next build output (all apps)
+**/.next/
+**/out/
+next-env.d.ts
+
+# Next type build info
+*.tsbuildinfo
+
+# Dependencies
+
 /.pnp
 .pnp.*
 .yarn/*
@@ -11,32 +32,21 @@
 !.yarn/versions
 .pnpm-lock.yaml
 
-# testing
-/coverage
+# Testing
 
-# next.js
-/.next/
-/out/
+**/coverage/
 
-# production
-/build
+# Env files
 
-# misc
-.DS_Store
+.env*
+!.env.example
+
+# Vercel
+.vercel
+
+# Misc
 *.pem
-
-# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
