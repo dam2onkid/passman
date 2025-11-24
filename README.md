@@ -111,14 +111,43 @@ How it all comes together:
 ## 📂 Project Structure
 
 ```
-src/
-├── app/                 # Next.js App Router
-├── components/          # React Components
-├── hooks/               # Custom Hooks (useZkLogin, useSeal, etc.)
-├── lib/                 # Core Logic (Enoki, Sui Providers)
-├── store/               # State Management (Zustand)
-└── packages/
-    └── utils/           # Shared utilities for Walrus/Sui
+passman/
+├── apps/
+│   ├── extension/       # Browser extension (Chrome/Edge)
+│   │   ├── src/
+│   │   │   ├── background/    # Service worker
+│   │   │   ├── components/    # React components
+│   │   │   ├── content/        # Content scripts & autofill UI
+│   │   │   ├── hooks/          # Custom hooks (useZkLogin, useSeal, etc.)
+│   │   │   ├── lib/            # Core logic (Enoki, Sui providers)
+│   │   │   ├── popup/          # Extension popup UI
+│   │   │   └── store/          # State management (Zustand)
+│   │   └── manifest.json
+│   ├── move/            # Sui Move smart contracts
+│   │   ├── sources/     # Contract source files
+│   │   │   ├── vault.move
+│   │   │   ├── share.move
+│   │   │   ├── deadman.move
+│   │   │   └── utils.move
+│   │   └── tests/       # Contract tests
+│   └── web/             # Next.js web application
+│       └── src/
+│           ├── app/            # Next.js App Router
+│           ├── components/     # React components
+│           ├── hooks/          # Custom hooks
+│           ├── lib/            # Core logic
+│           └── store/         # State management
+├── packages/
+│   ├── config/          # Shared ESLint configuration
+│   └── utils/           # Shared utilities for Walrus/Sui
+│       └── src/
+│           ├── walrus-client.js
+│           ├── construct-move-call.js
+│           └── ...
+├── docs/                # Documentation
+│   ├── features.md
+│   └── smart-contract-design.md
+└── scripts/             # Build & migration scripts
 ```
 
 ## 🤝 Contributing
