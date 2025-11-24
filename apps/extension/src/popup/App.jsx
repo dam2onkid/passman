@@ -20,9 +20,6 @@ function App() {
         <div className="w-full h-full flex flex-col bg-background">
           <header className="flex items-center justify-between p-4 border-b">
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-semibold">Passman</h1>
-              </div>
               <VaultSwitcher />
             </div>
             <WalletConnectButton />

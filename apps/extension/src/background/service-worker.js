@@ -40,8 +40,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === "complete" && tab.url) {
-    // Handle OAuth callback
-    if (tab.url.includes("/auth/callback")) {
+    // Handle OAuth callback - Google redirects to base URL format: https://<extension-id>.chromiumapp.org/
+    const extensionId = chrome.runtime.id;
+    const expectedRedirectUrl = `https://${extensionId}.chromiumapp.org/`;
+    if (tab.url.startsWith(expectedRedirectUrl)) {
       chrome.storage.local.set({ pending_auth_url: tab.url }, () => {
         chrome.tabs.remove(tabId, () => {
           // Show notification to user

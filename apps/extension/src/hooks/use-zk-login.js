@@ -85,8 +85,9 @@ export function useZkLogin() {
       setLoggingIn(true);
 
       // Use the extension's ID to construct the redirect URL
+      // Google OAuth for Chrome extensions requires base URL format: https://<extension-id>.chromiumapp.org/
       const extensionId = chrome.runtime.id;
-      const redirectUrl = `https://${extensionId}.chromiumapp.org/auth/callback`;
+      const redirectUrl = `https://${extensionId}.chromiumapp.org/`;
 
       const authUrl = await enokiFlow.createAuthorizationURL({
         provider: "google",
@@ -95,14 +96,53 @@ export function useZkLogin() {
         network: NETWORK,
       });
 
-      // Open the OAuth flow in a new tab
-      // The service worker will detect the callback and handle it
-      chrome.tabs.create({ url: authUrl });
+      // Use chrome.identity.launchWebAuthFlow for proper OAuth handling in extensions
+      chrome.identity.launchWebAuthFlow(
+        {
+          url: authUrl,
+          interactive: true,
+        },
+        async (callbackUrl) => {
+          if (chrome.runtime.lastError) {
+            toast.error(`Login failed: ${chrome.runtime.lastError.message}`);
+            setLoggingIn(false);
+            return;
+          }
+
+          if (callbackUrl) {
+            try {
+              const urlObj = new URL(callbackUrl);
+              const hash = urlObj.hash;
+              await enokiFlow.handleAuthCallback(hash);
+
+              const session = await enokiFlow.getSession();
+              if (session && session.jwt) {
+                const keypair = await enokiFlow.getKeypair({
+                  network: NETWORK,
+                });
+                const address = keypair.toSuiAddress();
+
+                setZkLoginAddress(address);
+                setLoggedIn(true);
+                toast.success("Successfully logged in with Google!");
+              } else {
+                throw new Error("No session or JWT after callback");
+              }
+            } catch (callbackError) {
+              toast.error(
+                `Failed to complete login: ${callbackError.message || "Unknown error"}`
+              );
+            } finally {
+              setLoggingIn(false);
+            }
+          }
+        }
+      );
     } catch (error) {
       toast.error("Failed to initiate login");
       setLoggingIn(false);
     }
-  }, [setLoggingIn]);
+  }, [setLoggingIn, setZkLoginAddress, setLoggedIn]);
 
   const completeLogin = useCallback(async () => {
     try {
