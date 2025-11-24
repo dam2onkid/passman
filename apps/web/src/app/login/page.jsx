@@ -39,13 +39,13 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary">
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full">
             <Image
-              src="/passman.svg"
+              src="/passman.png"
               alt="Passman"
-              width={32}
-              height={32}
-              className="h-8 w-8"
+              width={100}
+              height={100}
+              className="h-20 w-20"
             />
           </div>
           <CardTitle className="text-2xl">Welcome back</CardTitle>

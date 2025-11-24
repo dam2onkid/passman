@@ -39,12 +39,6 @@ export function Header() {
             >
               Security
             </Link>
-            <Link
-              href="#pricing"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Pricing
-            </Link>
           </nav>
 
           {/* Desktop CTA */}
@@ -85,13 +79,6 @@ export function Header() {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Security
-              </Link>
-              <Link
-                href="#pricing"
-                className="block px-3 py-2 text-base font-medium text-muted-foreground hover:text-foreground transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Pricing
               </Link>
               <div className="px-3 py-2">
                 <Button asChild className="w-full">

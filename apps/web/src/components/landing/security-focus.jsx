@@ -4,10 +4,10 @@ import { Card, CardContent } from "@/components/ui/card";
 const securityFeatures = [
   "End-to-end Seal encryption",
   "Sui blockchain immutability",
+  "Walrus decentralized storage",
   "Zero-knowledge architecture",
   "Decentralized key management",
   "No central point of failure",
-  "Cryptographic proof of integrity",
 ];
 
 const comparisons = [
@@ -22,9 +22,9 @@ const comparisons = [
     passman: "Only you have access",
   },
   {
-    feature: "Server Dependency",
-    traditional: "Relies on company servers",
-    passman: "Decentralized blockchain",
+    feature: "Storage",
+    traditional: "Centralized servers",
+    passman: "Walrus Decentralized Storage",
   },
   {
     feature: "Single Point of Failure",
@@ -35,14 +35,16 @@ const comparisons = [
 
 export function SecurityFocus() {
   return (
-    <section id="security" className="py-20 sm:py-32">
+    <section id="security" className="py-20 sm:py-32 relative overflow-hidden">
+      <div className="absolute inset-0 -z-10 bg-primary/5 skew-y-3 transform origin-top-left" />
+
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center mb-16">
           <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             Uncompromising Security
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Built on Sui blockchain with Seal encryption for maximum security
+            Built on Sui blockchain with Seal encryption and Walrus storage for maximum security
             and true decentralization
           </p>
         </div>
@@ -60,7 +62,7 @@ export function SecurityFocus() {
             <p className="text-muted-foreground mb-8 leading-relaxed">
               Unlike traditional password managers that rely on centralized
               servers, Passman leverages the Sui blockchain's cryptographic
-              guarantees and Seal encryption to ensure your passwords are truly
+              guarantees and Walrus decentralized storage to ensure your passwords are truly
               secure and under your control.
             </p>
 
@@ -76,7 +78,7 @@ export function SecurityFocus() {
 
           {/* Right Column - Comparison */}
           <div>
-            <Card className="border-0 bg-muted/50">
+            <Card className="border border-white/10 bg-white/5 backdrop-blur-lg shadow-xl">
               <CardContent className="p-8">
                 <h4 className="text-xl font-semibold text-foreground mb-6 text-center">
                   Passman vs Traditional Password Managers
@@ -86,7 +88,7 @@ export function SecurityFocus() {
                   {comparisons.map((comparison, index) => (
                     <div
                       key={index}
-                      className="border-b border-border pb-4 last:border-b-0"
+                      className="border-b border-white/10 pb-4 last:border-b-0"
                     >
                       <div className="font-medium text-foreground mb-2">
                         {comparison.feature}
@@ -116,7 +118,7 @@ export function SecurityFocus() {
         {/* Technical Details */}
         <div className="mt-20">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card className="text-center border-0 bg-muted/30">
+            <Card className="text-center border border-white/10 bg-white/5 backdrop-blur-md hover:bg-white/10 transition-colors">
               <CardContent className="p-8">
                 <Lock className="h-12 w-12 text-primary mx-auto mb-4" />
                 <h4 className="text-lg font-semibold text-foreground mb-2">
@@ -129,19 +131,19 @@ export function SecurityFocus() {
               </CardContent>
             </Card>
 
-            <Card className="text-center border-0 bg-muted/30">
+            <Card className="text-center border border-white/10 bg-white/5 backdrop-blur-md hover:bg-white/10 transition-colors">
               <CardContent className="p-8">
                 <Database className="h-12 w-12 text-primary mx-auto mb-4" />
                 <h4 className="text-lg font-semibold text-foreground mb-2">
-                  Sui Blockchain
+                  Walrus Storage
                 </h4>
                 <p className="text-muted-foreground text-sm">
-                  Immutable, decentralized storage with cryptographic guarantees
+                  Immutable, decentralized blob storage on Walrus ensures data availability
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="text-center border-0 bg-muted/30">
+            <Card className="text-center border border-white/10 bg-white/5 backdrop-blur-md hover:bg-white/10 transition-colors">
               <CardContent className="p-8">
                 <Key className="h-12 w-12 text-primary mx-auto mb-4" />
                 <h4 className="text-lg font-semibold text-foreground mb-2">
