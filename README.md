@@ -7,113 +7,130 @@
 
 **The First Blockchain-Powered Password Manager**
 
-_Your Passwords, Secured by Blockchain_
+_Your Passwords, Secured by Sui, Seal, and Walrus._
 
 [![Next.js](https://img.shields.io/badge/Next.js-15.3.1-black?style=flat-square&logo=next.js)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19.0.0-blue?style=flat-square&logo=react)](https://reactjs.org/)
-[![Sui Blockchain](https://img.shields.io/badge/Sui-Blockchain-4285F4?style=flat-square)](https://sui.io/)
-[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4-38B2AC?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
+[![Sui](https://img.shields.io/badge/Sui-Blockchain-4285F4?style=flat-square&logo=sui)](https://sui.io/)
+[![zkLogin](https://img.shields.io/badge/zkLogin-Enabled-green?style=flat-square)](https://sui.io/zklogin)
+[![Walrus](https://img.shields.io/badge/Walrus-Storage-orange?style=flat-square)](https://walrus.site/)
+[![Seal](https://img.shields.io/badge/Seal-Encryption-purple?style=flat-square)](https://docs.mystenlabs.com/)
 
 </div>
 
-## 🔐 About Passman
+## 🔐 Introduction
 
-Passman is a revolutionary password manager built on the Sui blockchain with Seal encryption technology. It provides true decentralization for your digital security, ensuring that you have complete control over your passwords without relying on any central authority.
+**Passman** represents the next evolution in digital security. By leveraging the **Sui** blockchain, **Walrus** decentralized storage, and **Seal** encryption, Passman offers a password management solution that is truly decentralized, secure, and user-friendly. Say goodbye to centralized data breaches and hello to complete ownership of your digital identity.
 
-### ✨ Key Features
+## 🏗️ Core Technologies
 
-- **🔗 Blockchain-Powered**: Built on Sui blockchain for ultimate security and decentralization
-- **🔒 Seal Encryption**: Advanced encryption using Mysten Labs' Seal technology
-- **🌐 100% Decentralized**: No central servers or authorities controlling your data
-- **🎨 Modern UI**: Beautiful, responsive interface built with React and TailwindCSS
-- **🔄 Real-time Sync**: Seamless synchronization across all your devices
-- **🛡️ Zero-Knowledge**: Your passwords are encrypted and only you have access
+Passman is built upon a powerful stack of decentralized technologies designed to work seamlessly together:
 
-### 🛠️ Tech Stack
+### 💧 Sui Blockchain
 
-- **Frontend**: Next.js 15.3.1, React 19.0.0
-- **Blockchain**: Sui Network with @mysten/sui SDK
-- **Encryption**: @mysten/seal for advanced cryptographic operations
-- **Styling**: TailwindCSS 4 with Radix UI components
-- **State Management**: Zustand
-- **Data Fetching**: TanStack React Query
+The backbone of Passman. Sui provides the immutable ledger for your vault's metadata and access controls.
+
+- **Ownership**: You own your data on-chain.
+- **Speed**: Instant finality ensuring your updates are saved immediately.
+- **Security**: Battle-tested consensus protecting your access rights.
+
+### 🆔 zkLogin (Zero-Knowledge Login)
+
+Web3 security with a Web2 experience.
+
+- **Seamless Onboarding**: Login with your existing Google account. No need to manage complex seed phrases or private keys.
+- **Privacy**: Leverages zero-knowledge proofs to verify your identity without revealing sensitive information on-chain.
+- **Non-Custodial**: Even though you use Google to login, your keys are derived locally—Passman never sees your credentials.
+
+### 🛡️ Seal Encryption
+
+Advanced cryptographic protection for your secrets.
+
+- **Threshold Cryptography**: Utilizes Mysten Labs' Seal technology to encrypt your data.
+- **Distributed Trust**: Your encryption keys are never held by a single entity.
+- **Client-Side**: All encryption and decryption happen directly on your device.
+
+### 🦭 Walrus Decentralized Storage
+
+Robust and efficient storage for your encrypted data.
+
+- **Decentralized Blobs**: Your encrypted password vaults are stored as blobs on the Walrus decentralized storage network.
+- **Cost-Effective**: Efficient storage for large encrypted payloads without clogging the main chain.
+- **High Availability**: Redundant storage ensures your data is always accessible.
+
+## ⚙️ Technical Architecture
+
+How it all comes together:
+
+1.  **Authentication**: User logs in via **Google** using **zkLogin**. A temporary session key is created, and a stable Sui address is derived.
+2.  **Encryption**: When you save a password, **Seal** encrypts the data client-side using threshold keys.
+3.  **Storage**: The encrypted blob is uploaded to **Walrus**, returning a unique Blob ID.
+4.  **Consensus**: The Blob ID and metadata are stored in a `Vault` object on **Sui**, linking your identity to your data.
+
+## ✨ Key Features
+
+- **100% Decentralized**: Zero reliance on centralized servers.
+- **Deadman Switch**: Set up a trusted contact to inherit access to your vault after a period of inactivity.
+- **Vault Sharing**: Securely share password vaults with other users on the network.
+- **Cross-Device Sync**: Access your passwords anywhere by simply logging into your Google account.
+- **Modern UI**: A beautiful interface built with Next.js, React, and TailwindCSS.
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
 - Node.js 18+
-- pnpm (recommended) or npm
+- pnpm (recommended)
 
 ### Installation
 
-1. **Clone the repository**
+1.  **Clone the repository**
 
-   ```bash
-   git clone <repository-url>
-   cd passman
-   ```
+    ```bash
+    git clone https://github.com/yourusername/passman.git
+    cd passman
+    ```
 
-2. **Install dependencies**
+2.  **Install dependencies**
 
-   ```bash
-   pnpm install
-   ```
+    ```bash
+    pnpm install
+    ```
 
-3. **Run the development server**
+3.  **Configure Environment**
+    Create a `.env.local` file based on `.env.example` and add your Enoki API key and other configuration.
 
-   ```bash
-   pnpm dev
-   ```
+4.  **Run Development Server**
 
-4. **Open your browser**
+    ```bash
+    pnpm dev
+    ```
 
-   Navigate to [http://localhost:3000](http://localhost:3000) to see Passman in action.
+5.  **Explore**
+    Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-### Available Scripts
-
-- `pnpm dev` - Start development server with Turbopack
-- `pnpm build` - Build the application for production
-- `pnpm start` - Start the production server
-- `pnpm lint` - Run ESLint for code quality
-
-## 🏗️ Project Structure
+## 📂 Project Structure
 
 ```
 src/
-├── app/                 # Next.js app router pages
-├── components/          # Reusable UI components
-│   ├── landing/        # Landing page components
-│   └── ui/             # Base UI components
-├── hooks/              # Custom React hooks
-├── lib/                # Utility functions and configurations
-├── store/              # Zustand state management
-└── constants/          # Application constants
+├── app/                 # Next.js App Router
+├── components/          # React Components
+├── hooks/               # Custom Hooks (useZkLogin, useSeal, etc.)
+├── lib/                 # Core Logic (Enoki, Sui Providers)
+├── store/               # State Management (Zustand)
+└── packages/
+    └── utils/           # Shared utilities for Walrus/Sui
 ```
-
-## 🔒 Security Features
-
-- **Blockchain Immutability**: Your encrypted data is stored on the immutable Sui blockchain
-- **Client-Side Encryption**: All encryption happens on your device before data leaves
-- **No Central Point of Failure**: Decentralized architecture eliminates single points of failure
-- **Open Source**: Transparent and auditable codebase
 
 ## 🤝 Contributing
 
-We welcome contributions! Please feel free to submit a Pull Request.
+We welcome contributions from the community! Whether it's fixing bugs, improving documentation, or adding new features for Walrus/Seal integrations.
 
 ## 📄 License
 
 This project is licensed under the MIT License.
 
-## 🔗 Links
-
-- [Sui Network](https://sui.io/)
-- [Mysten Labs](https://mystenlabs.com/)
-- [Next.js Documentation](https://nextjs.org/docs)
-
 ---
 
 <div align="center">
-  <p>Built with ❤️ for a decentralized future</p>
+  <p>Built with ❤️ on <b>Sui</b></p>
 </div>
