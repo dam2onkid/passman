@@ -11,7 +11,7 @@ import { useSealEncrypt, getSealId } from "@/hooks/use-seal";
 import { useSuiWallet } from "@/hooks/use-sui-wallet";
 import { useNetworkVariable } from "@passman/utils/network-config";
 import useActiveVault from "@/hooks/use-active-vault";
-import { createItemMoveCallTx } from "@passman/utils";
+import { createItemMoveCallTx, createItemWithSafeTx } from "@passman/utils";
 import { uploadToWalrus } from "@passman/utils";
 
 export function NewItemModalManager({ onNewItemCreated }) {
@@ -19,7 +19,7 @@ export function NewItemModalManager({ onNewItemCreated }) {
   const { modalState, closeModal, openItemForm, openModal } = useNewItemModal();
   const { signAndExecuteTransaction, client, walletAddress } = useSuiWallet();
   const packageId = useNetworkVariable("passman");
-  const { vaultId, capId } = useActiveVault();
+  const { vaultId, capId, isCapInSafe, safeId } = useActiveVault();
   const { encryptData } = useSealEncrypt();
 
   const handleSaveItem = async (itemType, data) => {
@@ -54,14 +54,24 @@ export function NewItemModalManager({ onNewItemCreated }) {
         return;
       }
 
-      const tx = createItemMoveCallTx({
-        vaultId,
-        capId,
-        name,
-        itemType,
-        nonce,
-        walrusBlobId: blob_id,
-      });
+      // Use safe-aware transaction if cap is in safe
+      const tx = isCapInSafe
+        ? createItemWithSafeTx({
+            safeId,
+            vaultId,
+            name,
+            itemType,
+            nonce,
+            walrusBlobId: blob_id,
+          })
+        : createItemMoveCallTx({
+            vaultId,
+            capId,
+            name,
+            itemType,
+            nonce,
+            walrusBlobId: blob_id,
+          });
 
       signAndExecuteTransaction(
         { transaction: tx },

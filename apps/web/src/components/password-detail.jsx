@@ -47,6 +47,8 @@ import {
   ownerSealApproveMoveCallTx,
   deleteItemMoveCallTx,
   editItemMoveCallTx,
+  deleteItemWithSafeTx,
+  editItemWithSafeTx,
 } from "@passman/utils";
 import { ITEM_TYPE_DATA, getItemIcon } from "@passman/utils";
 import { PasswordGenerator } from "@/components/password-generator";
@@ -69,7 +71,7 @@ export function PasswordDetail({ entry, onItemDeleted }) {
   const [activePasswordField, setActivePasswordField] = useState(null);
   const [showShareModal, setShowShareModal] = useState(false);
 
-  const { vaultId, capId } = useActiveVault();
+  const { vaultId, capId, isCapInSafe, safeId } = useActiveVault();
   const packageId = useNetworkVariable("passman");
   const {
     client,
@@ -118,8 +120,14 @@ export function PasswordDetail({ entry, onItemDeleted }) {
         setIsEditing(false);
         return;
       }
-      if (!entry?.id?.id || !vaultId || !capId || !entry.nonce) {
+      if (!entry?.id?.id || !vaultId || !entry.nonce) {
         toast.error("Missing required data for editing");
+        return;
+      }
+
+      // Check if we have cap access (either direct or via safe)
+      if (!isCapInSafe && !capId) {
+        toast.error("Missing cap for editing");
         return;
       }
 
@@ -150,12 +158,20 @@ export function PasswordDetail({ entry, onItemDeleted }) {
           return;
         }
 
-        const tx = editItemMoveCallTx({
-          capId,
-          name: formData.itemName,
-          walrusBlobId: blob_id,
-          itemId: entry.id.id,
-        });
+        // Use safe-aware transaction if cap is in safe
+        const tx = isCapInSafe
+          ? editItemWithSafeTx({
+              safeId,
+              name: formData.itemName,
+              walrusBlobId: blob_id,
+              itemId: entry.id.id,
+            })
+          : editItemMoveCallTx({
+              capId,
+              name: formData.itemName,
+              walrusBlobId: blob_id,
+              itemId: entry.id.id,
+            });
 
         signAndExecuteTransaction(
           { transaction: tx },
@@ -206,18 +222,31 @@ export function PasswordDetail({ entry, onItemDeleted }) {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!entry?.id?.id || !vaultId || !capId) {
+    if (!entry?.id?.id || !vaultId) {
       toast.error("Missing required data for deletion");
+      return;
+    }
+
+    // Check if we have cap access (either direct or via safe)
+    if (!isCapInSafe && !capId) {
+      toast.error("Missing cap for deletion");
       return;
     }
 
     setIsDeleting(true);
     try {
-      const tx = deleteItemMoveCallTx({
-        vaultId,
-        capId,
-        itemId: entry.id.id,
-      });
+      // Use safe-aware transaction if cap is in safe
+      const tx = isCapInSafe
+        ? deleteItemWithSafeTx({
+            safeId,
+            vaultId,
+            itemId: entry.id.id,
+          })
+        : deleteItemMoveCallTx({
+            vaultId,
+            capId,
+            itemId: entry.id.id,
+          });
 
       signAndExecuteTransaction(
         { transaction: tx },

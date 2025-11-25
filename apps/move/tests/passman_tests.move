@@ -5,9 +5,8 @@ use std::string::utf8;
 use sui::clock;
 use sui::test_scenario::{Self as ts};
 use passman::vault::{Self, Vault};
-use passman::deadman::{Self, DeadManSwitch};
+use passman::safe::{Self, Safe};
 use passman::share::{Self};
-use passman::recovery::{Self, Safe};
 
 const OWNER: address = @0xA;
 const BENEFICIARY: address = @0xB;
@@ -77,157 +76,6 @@ fun test_vault_create_item_wrong_cap() {
     let (_vault2, cap2) = vault::create_vault_for_testing(ctx);
 
     let _item = vault::create_item_for_testing(&cap2, &mut vault1, ctx);
-
-    abort 0
-}
-
-// ============================================
-// DEADMAN SWITCH TESTS
-// ============================================
-
-#[test]
-fun test_deadman_setup() {
-    let mut scenario = ts::begin(OWNER);
-    let ctx = scenario.ctx();
-    let clock = clock::create_for_testing(ctx);
-
-    let (vault, cap) = vault::create_vault_for_testing(ctx);
-    let switch = deadman::create_switch_for_testing(
-        &vault,
-        cap,
-        BENEFICIARY,
-        ONE_WEEK_MS,
-        &clock,
-        ctx
-    );
-
-    assert!(deadman::switch_owner(&switch) == OWNER, 0);
-    assert!(deadman::switch_beneficiary(&switch) == BENEFICIARY, 1);
-    assert!(!deadman::switch_claimed(&switch), 2);
-
-    deadman::destroy_switch_for_testing(switch);
-    vault::destroy_vault_for_testing(vault);
-    clock::destroy_for_testing(clock);
-    scenario.end();
-}
-
-#[test]
-fun test_deadman_heartbeat() {
-    let mut scenario = ts::begin(OWNER);
-    {
-        let ctx = scenario.ctx();
-        let clock = clock::create_for_testing(ctx);
-        let (vault, cap) = vault::create_vault_for_testing(ctx);
-        let switch = deadman::create_switch_for_testing(
-            &vault,
-            cap,
-            BENEFICIARY,
-            ONE_WEEK_MS,
-            &clock,
-            ctx
-        );
-        deadman::share_switch_for_testing(switch);
-        vault::transfer_vault_for_testing(vault, OWNER);
-        clock::share_for_testing(clock);
-    };
-
-    scenario.next_tx(OWNER);
-    {
-        let mut switch = scenario.take_shared<DeadManSwitch>();
-        let clock = scenario.take_shared<clock::Clock>();
-
-        deadman::heartbeat(&mut switch, &clock, scenario.ctx());
-
-        ts::return_shared(switch);
-        ts::return_shared(clock);
-    };
-
-    scenario.end();
-}
-
-#[test, expected_failure(abort_code = deadman::ENotOwner)]
-fun test_deadman_heartbeat_not_owner() {
-    let mut scenario = ts::begin(OWNER);
-    {
-        let ctx = scenario.ctx();
-        let clock = clock::create_for_testing(ctx);
-        let (vault, cap) = vault::create_vault_for_testing(ctx);
-        let switch = deadman::create_switch_for_testing(
-            &vault,
-            cap,
-            BENEFICIARY,
-            ONE_WEEK_MS,
-            &clock,
-            ctx
-        );
-        deadman::share_switch_for_testing(switch);
-        vault::transfer_vault_for_testing(vault, OWNER);
-        clock::share_for_testing(clock);
-    };
-
-    scenario.next_tx(BENEFICIARY);
-    {
-        let mut switch = scenario.take_shared<DeadManSwitch>();
-        let clock = scenario.take_shared<clock::Clock>();
-
-        deadman::heartbeat(&mut switch, &clock, scenario.ctx());
-
-        ts::return_shared(switch);
-        ts::return_shared(clock);
-    };
-
-    scenario.end();
-}
-
-#[test, expected_failure(abort_code = deadman::ENotExpired)]
-fun test_deadman_claim_not_expired() {
-    let mut scenario = ts::begin(OWNER);
-    {
-        let ctx = scenario.ctx();
-        let clock = clock::create_for_testing(ctx);
-        let (vault, cap) = vault::create_vault_for_testing(ctx);
-        let switch = deadman::create_switch_for_testing(
-            &vault,
-            cap,
-            BENEFICIARY,
-            ONE_WEEK_MS,
-            &clock,
-            ctx
-        );
-        deadman::share_switch_for_testing(switch);
-        vault::transfer_vault_for_testing(vault, OWNER);
-        clock::share_for_testing(clock);
-    };
-
-    scenario.next_tx(BENEFICIARY);
-    {
-        let mut switch = scenario.take_shared<DeadManSwitch>();
-        let clock = scenario.take_shared<clock::Clock>();
-
-        deadman::claim(&mut switch, &clock, scenario.ctx());
-
-        ts::return_shared(switch);
-        ts::return_shared(clock);
-    };
-
-    scenario.end();
-}
-
-#[test, expected_failure(abort_code = deadman::EMinimumPeriod)]
-fun test_deadman_setup_period_too_short() {
-    let mut scenario = ts::begin(OWNER);
-    let ctx = scenario.ctx();
-    let clock = clock::create_for_testing(ctx);
-
-    let (vault, cap) = vault::create_vault_for_testing(ctx);
-    let _switch = deadman::create_switch_for_testing(
-        &vault,
-        cap,
-        BENEFICIARY,
-        1000,
-        &clock,
-        ctx
-    );
 
     abort 0
 }
@@ -342,39 +190,55 @@ fun test_share_update_wrong_cap() {
 }
 
 // ============================================
-// RECOVERY TESTS
+// SAFE TESTS - Social Recovery
 // ============================================
 
 #[test]
-fun test_recovery_create_safe() {
+fun test_safe_create_with_guardians() {
     let mut scenario = ts::begin(OWNER);
     let ctx = scenario.ctx();
+    let clock = clock::create_for_testing(ctx);
 
     let (vault, cap) = vault::create_vault_for_testing(ctx);
     let guardians = vector[GUARDIAN1, GUARDIAN2, GUARDIAN3];
 
-    let safe = recovery::create_safe_for_testing(&vault, cap, guardians, 2, ctx);
+    let safe = safe::create_safe_for_testing(
+        &vault,
+        cap,
+        guardians,
+        2,
+        option::none(), // No deadman switch
+        0,
+        &clock,
+        ctx
+    );
 
-    assert!(recovery::safe_owner(&safe) == OWNER, 0);
-    assert!(recovery::safe_threshold(&safe) == 2, 1);
-    assert!(recovery::safe_guardians(&safe) == guardians, 2);
+    assert!(safe::safe_owner(&safe) == OWNER, 0);
+    assert!(safe::safe_threshold(&safe) == 2, 1);
+    assert!(safe::safe_guardians(&safe) == guardians, 2);
+    assert!(option::is_none(&safe::safe_beneficiary(&safe)), 3);
 
-    recovery::destroy_safe_for_testing(safe);
+    safe::destroy_safe_for_testing(safe);
     vault::destroy_vault_for_testing(vault);
+    clock::destroy_for_testing(clock);
     scenario.end();
 }
 
 #[test]
-fun test_recovery_borrow_and_return_cap() {
+fun test_safe_borrow_and_return_cap() {
     let mut scenario = ts::begin(OWNER);
     {
         let ctx = scenario.ctx();
+        let clock = clock::create_for_testing(ctx);
         let (vault, cap) = vault::create_vault_for_testing(ctx);
         let guardians = vector[GUARDIAN1, GUARDIAN2, GUARDIAN3];
-        let safe = recovery::create_safe_for_testing(&vault, cap, guardians, 2, ctx);
+        let safe = safe::create_safe_for_testing(
+            &vault, cap, guardians, 2, option::none(), 0, &clock, ctx
+        );
 
-        recovery::share_safe_for_testing(safe);
+        safe::share_safe_for_testing(safe);
         vault::transfer_vault_for_testing(vault, OWNER);
+        clock::share_for_testing(clock);
     };
 
     scenario.next_tx(OWNER);
@@ -382,11 +246,11 @@ fun test_recovery_borrow_and_return_cap() {
         let mut safe = scenario.take_shared<Safe>();
         let vault = scenario.take_from_sender<Vault>();
 
-        let (cap, receipt) = recovery::borrow_cap(&mut safe, scenario.ctx());
+        let (cap, receipt) = safe::borrow_cap(&mut safe, scenario.ctx());
 
         assert!(vault::verify_cap(&cap, &vault), 0);
 
-        recovery::return_cap(&mut safe, cap, receipt);
+        safe::return_cap(&mut safe, cap, receipt);
 
         ts::return_shared(safe);
         ts::return_to_sender(&scenario, vault);
@@ -395,48 +259,57 @@ fun test_recovery_borrow_and_return_cap() {
     scenario.end();
 }
 
-#[test, expected_failure(abort_code = recovery::ENotOwner)]
-fun test_recovery_borrow_cap_not_owner() {
+#[test, expected_failure(abort_code = safe::ENotOwner)]
+fun test_safe_borrow_cap_not_owner() {
     let mut scenario = ts::begin(OWNER);
     {
         let ctx = scenario.ctx();
+        let clock = clock::create_for_testing(ctx);
         let (vault, cap) = vault::create_vault_for_testing(ctx);
         let guardians = vector[GUARDIAN1, GUARDIAN2, GUARDIAN3];
-        let safe = recovery::create_safe_for_testing(&vault, cap, guardians, 2, ctx);
+        let safe = safe::create_safe_for_testing(
+            &vault, cap, guardians, 2, option::none(), 0, &clock, ctx
+        );
 
-        recovery::share_safe_for_testing(safe);
+        safe::share_safe_for_testing(safe);
         vault::transfer_vault_for_testing(vault, OWNER);
+        clock::share_for_testing(clock);
     };
 
     scenario.next_tx(GUARDIAN1);
     {
         let mut safe = scenario.take_shared<Safe>();
-        let (_cap, _receipt) = recovery::borrow_cap(&mut safe, scenario.ctx());
+        let (_cap, _receipt) = safe::borrow_cap(&mut safe, scenario.ctx());
 
         abort 0
     }
 }
 
 #[test]
-fun test_recovery_approve_single_vote() {
+fun test_safe_approve_single_vote() {
     let mut scenario = ts::begin(OWNER);
     {
         let ctx = scenario.ctx();
+        let clock = clock::create_for_testing(ctx);
         let (vault, cap) = vault::create_vault_for_testing(ctx);
         let guardians = vector[GUARDIAN1, GUARDIAN2, GUARDIAN3];
-        let safe = recovery::create_safe_for_testing(&vault, cap, guardians, 2, ctx);
+        let safe = safe::create_safe_for_testing(
+            &vault, cap, guardians, 2, option::none(), 0, &clock, ctx
+        );
 
-        recovery::share_safe_for_testing(safe);
+        safe::share_safe_for_testing(safe);
         vault::transfer_vault_for_testing(vault, OWNER);
+        clock::share_for_testing(clock);
     };
 
     scenario.next_tx(GUARDIAN1);
     {
         let mut safe = scenario.take_shared<Safe>();
 
-        recovery::approve_recovery(&mut safe, BENEFICIARY, scenario.ctx());
+        safe::approve_recovery(&mut safe, BENEFICIARY, scenario.ctx());
 
-        assert!(recovery::safe_owner(&safe) == OWNER, 0);
+        // Threshold not met, owner unchanged
+        assert!(safe::safe_owner(&safe) == OWNER, 0);
 
         ts::return_shared(safe);
     };
@@ -445,31 +318,36 @@ fun test_recovery_approve_single_vote() {
 }
 
 #[test]
-fun test_recovery_approve_threshold_met() {
+fun test_safe_approve_threshold_met() {
     let mut scenario = ts::begin(OWNER);
     {
         let ctx = scenario.ctx();
+        let clock = clock::create_for_testing(ctx);
         let (vault, cap) = vault::create_vault_for_testing(ctx);
         let guardians = vector[GUARDIAN1, GUARDIAN2, GUARDIAN3];
-        let safe = recovery::create_safe_for_testing(&vault, cap, guardians, 2, ctx);
+        let safe = safe::create_safe_for_testing(
+            &vault, cap, guardians, 2, option::none(), 0, &clock, ctx
+        );
 
-        recovery::share_safe_for_testing(safe);
+        safe::share_safe_for_testing(safe);
         vault::transfer_vault_for_testing(vault, OWNER);
+        clock::share_for_testing(clock);
     };
 
     scenario.next_tx(GUARDIAN1);
     {
         let mut safe = scenario.take_shared<Safe>();
-        recovery::approve_recovery(&mut safe, BENEFICIARY, scenario.ctx());
+        safe::approve_recovery(&mut safe, BENEFICIARY, scenario.ctx());
         ts::return_shared(safe);
     };
 
     scenario.next_tx(GUARDIAN2);
     {
         let mut safe = scenario.take_shared<Safe>();
-        recovery::approve_recovery(&mut safe, BENEFICIARY, scenario.ctx());
+        safe::approve_recovery(&mut safe, BENEFICIARY, scenario.ctx());
 
-        assert!(recovery::safe_owner(&safe) == BENEFICIARY, 0);
+        // Threshold met, owner changed
+        assert!(safe::safe_owner(&safe) == BENEFICIARY, 0);
 
         ts::return_shared(safe);
     };
@@ -477,75 +355,393 @@ fun test_recovery_approve_threshold_met() {
     scenario.end();
 }
 
-#[test, expected_failure(abort_code = recovery::ENotGuardian)]
-fun test_recovery_approve_not_guardian() {
+#[test, expected_failure(abort_code = safe::ENotGuardian)]
+fun test_safe_approve_not_guardian() {
     let mut scenario = ts::begin(OWNER);
     {
         let ctx = scenario.ctx();
+        let clock = clock::create_for_testing(ctx);
         let (vault, cap) = vault::create_vault_for_testing(ctx);
         let guardians = vector[GUARDIAN1, GUARDIAN2, GUARDIAN3];
-        let safe = recovery::create_safe_for_testing(&vault, cap, guardians, 2, ctx);
+        let safe = safe::create_safe_for_testing(
+            &vault, cap, guardians, 2, option::none(), 0, &clock, ctx
+        );
 
-        recovery::share_safe_for_testing(safe);
+        safe::share_safe_for_testing(safe);
         vault::transfer_vault_for_testing(vault, OWNER);
+        clock::share_for_testing(clock);
     };
 
     scenario.next_tx(RECIPIENT);
     {
         let mut safe = scenario.take_shared<Safe>();
-        recovery::approve_recovery(&mut safe, BENEFICIARY, scenario.ctx());
+        safe::approve_recovery(&mut safe, BENEFICIARY, scenario.ctx());
         ts::return_shared(safe);
     };
 
     scenario.end();
 }
 
-#[test, expected_failure(abort_code = recovery::EDuplicateVote)]
-fun test_recovery_approve_duplicate_vote() {
+#[test, expected_failure(abort_code = safe::EDuplicateVote)]
+fun test_safe_approve_duplicate_vote() {
     let mut scenario = ts::begin(OWNER);
     {
         let ctx = scenario.ctx();
+        let clock = clock::create_for_testing(ctx);
         let (vault, cap) = vault::create_vault_for_testing(ctx);
         let guardians = vector[GUARDIAN1, GUARDIAN2, GUARDIAN3];
-        let safe = recovery::create_safe_for_testing(&vault, cap, guardians, 2, ctx);
+        let safe = safe::create_safe_for_testing(
+            &vault, cap, guardians, 2, option::none(), 0, &clock, ctx
+        );
 
-        recovery::share_safe_for_testing(safe);
+        safe::share_safe_for_testing(safe);
         vault::transfer_vault_for_testing(vault, OWNER);
+        clock::share_for_testing(clock);
     };
 
     scenario.next_tx(GUARDIAN1);
     {
         let mut safe = scenario.take_shared<Safe>();
-        recovery::approve_recovery(&mut safe, BENEFICIARY, scenario.ctx());
-        recovery::approve_recovery(&mut safe, BENEFICIARY, scenario.ctx());
+        safe::approve_recovery(&mut safe, BENEFICIARY, scenario.ctx());
+        safe::approve_recovery(&mut safe, BENEFICIARY, scenario.ctx());
         ts::return_shared(safe);
     };
 
     scenario.end();
 }
 
-#[test, expected_failure(abort_code = recovery::EInvalidThreshold)]
-fun test_recovery_create_safe_invalid_threshold_zero() {
+#[test, expected_failure(abort_code = safe::EInvalidThreshold)]
+fun test_safe_create_invalid_threshold_zero() {
     let mut scenario = ts::begin(OWNER);
     let ctx = scenario.ctx();
+    let clock = clock::create_for_testing(ctx);
 
     let (vault, cap) = vault::create_vault_for_testing(ctx);
     let guardians = vector[GUARDIAN1, GUARDIAN2];
 
-    let _safe = recovery::create_safe_for_testing(&vault, cap, guardians, 0, ctx);
+    let _safe = safe::create_safe_for_testing(
+        &vault, cap, guardians, 0, option::none(), 0, &clock, ctx
+    );
 
     abort 0
 }
 
-#[test, expected_failure(abort_code = recovery::EInvalidThreshold)]
-fun test_recovery_create_safe_invalid_threshold_too_high() {
+#[test, expected_failure(abort_code = safe::EInvalidThreshold)]
+fun test_safe_create_invalid_threshold_too_high() {
     let mut scenario = ts::begin(OWNER);
     let ctx = scenario.ctx();
+    let clock = clock::create_for_testing(ctx);
 
     let (vault, cap) = vault::create_vault_for_testing(ctx);
     let guardians = vector[GUARDIAN1, GUARDIAN2];
 
-    let _safe = recovery::create_safe_for_testing(&vault, cap, guardians, 5, ctx);
+    let _safe = safe::create_safe_for_testing(
+        &vault, cap, guardians, 5, option::none(), 0, &clock, ctx
+    );
 
     abort 0
+}
+
+// ============================================
+// SAFE TESTS - Deadman Switch
+// ============================================
+
+#[test]
+fun test_safe_create_with_deadman() {
+    let mut scenario = ts::begin(OWNER);
+    let ctx = scenario.ctx();
+    let clock = clock::create_for_testing(ctx);
+
+    let (vault, cap) = vault::create_vault_for_testing(ctx);
+
+    let safe = safe::create_safe_for_testing(
+        &vault,
+        cap,
+        vector::empty(), // No guardians
+        0,
+        option::some(BENEFICIARY),
+        ONE_WEEK_MS,
+        &clock,
+        ctx
+    );
+
+    assert!(safe::safe_owner(&safe) == OWNER, 0);
+    assert!(safe::safe_beneficiary(&safe) == option::some(BENEFICIARY), 1);
+    assert!(!safe::safe_deadman_claimed(&safe), 2);
+
+    safe::destroy_safe_for_testing(safe);
+    vault::destroy_vault_for_testing(vault);
+    clock::destroy_for_testing(clock);
+    scenario.end();
+}
+
+#[test]
+fun test_safe_create_with_both_features() {
+    let mut scenario = ts::begin(OWNER);
+    let ctx = scenario.ctx();
+    let clock = clock::create_for_testing(ctx);
+
+    let (vault, cap) = vault::create_vault_for_testing(ctx);
+    let guardians = vector[GUARDIAN1, GUARDIAN2, GUARDIAN3];
+
+    let safe = safe::create_safe_for_testing(
+        &vault,
+        cap,
+        guardians,
+        2,
+        option::some(BENEFICIARY),
+        ONE_WEEK_MS,
+        &clock,
+        ctx
+    );
+
+    // Check both features are enabled
+    assert!(safe::safe_owner(&safe) == OWNER, 0);
+    assert!(safe::safe_threshold(&safe) == 2, 1);
+    assert!(safe::safe_guardians(&safe) == guardians, 2);
+    assert!(safe::safe_beneficiary(&safe) == option::some(BENEFICIARY), 3);
+    assert!(!safe::safe_deadman_claimed(&safe), 4);
+
+    safe::destroy_safe_for_testing(safe);
+    vault::destroy_vault_for_testing(vault);
+    clock::destroy_for_testing(clock);
+    scenario.end();
+}
+
+#[test]
+fun test_safe_heartbeat() {
+    let mut scenario = ts::begin(OWNER);
+    {
+        let ctx = scenario.ctx();
+        let clock = clock::create_for_testing(ctx);
+        let (vault, cap) = vault::create_vault_for_testing(ctx);
+        let safe = safe::create_safe_for_testing(
+            &vault,
+            cap,
+            vector::empty(),
+            0,
+            option::some(BENEFICIARY),
+            ONE_WEEK_MS,
+            &clock,
+            ctx
+        );
+        safe::share_safe_for_testing(safe);
+        vault::transfer_vault_for_testing(vault, OWNER);
+        clock::share_for_testing(clock);
+    };
+
+    scenario.next_tx(OWNER);
+    {
+        let mut safe = scenario.take_shared<Safe>();
+        let clock = scenario.take_shared<clock::Clock>();
+
+        safe::heartbeat(&mut safe, &clock, scenario.ctx());
+
+        ts::return_shared(safe);
+        ts::return_shared(clock);
+    };
+
+    scenario.end();
+}
+
+#[test, expected_failure(abort_code = safe::ENotOwner)]
+fun test_safe_heartbeat_not_owner() {
+    let mut scenario = ts::begin(OWNER);
+    {
+        let ctx = scenario.ctx();
+        let clock = clock::create_for_testing(ctx);
+        let (vault, cap) = vault::create_vault_for_testing(ctx);
+        let safe = safe::create_safe_for_testing(
+            &vault,
+            cap,
+            vector::empty(),
+            0,
+            option::some(BENEFICIARY),
+            ONE_WEEK_MS,
+            &clock,
+            ctx
+        );
+        safe::share_safe_for_testing(safe);
+        vault::transfer_vault_for_testing(vault, OWNER);
+        clock::share_for_testing(clock);
+    };
+
+    scenario.next_tx(BENEFICIARY);
+    {
+        let mut safe = scenario.take_shared<Safe>();
+        let clock = scenario.take_shared<clock::Clock>();
+
+        safe::heartbeat(&mut safe, &clock, scenario.ctx());
+
+        ts::return_shared(safe);
+        ts::return_shared(clock);
+    };
+
+    scenario.end();
+}
+
+#[test, expected_failure(abort_code = safe::ENotExpired)]
+fun test_safe_claim_not_expired() {
+    let mut scenario = ts::begin(OWNER);
+    {
+        let ctx = scenario.ctx();
+        let clock = clock::create_for_testing(ctx);
+        let (vault, cap) = vault::create_vault_for_testing(ctx);
+        let safe = safe::create_safe_for_testing(
+            &vault,
+            cap,
+            vector::empty(),
+            0,
+            option::some(BENEFICIARY),
+            ONE_WEEK_MS,
+            &clock,
+            ctx
+        );
+        safe::share_safe_for_testing(safe);
+        vault::transfer_vault_for_testing(vault, OWNER);
+        clock::share_for_testing(clock);
+    };
+
+    scenario.next_tx(BENEFICIARY);
+    {
+        let mut safe = scenario.take_shared<Safe>();
+        let clock = scenario.take_shared<clock::Clock>();
+
+        safe::claim(&mut safe, &clock, scenario.ctx());
+
+        ts::return_shared(safe);
+        ts::return_shared(clock);
+    };
+
+    scenario.end();
+}
+
+#[test, expected_failure(abort_code = safe::EMinimumPeriod)]
+fun test_safe_create_deadman_period_too_short() {
+    let mut scenario = ts::begin(OWNER);
+    let ctx = scenario.ctx();
+    let clock = clock::create_for_testing(ctx);
+
+    let (vault, cap) = vault::create_vault_for_testing(ctx);
+    let _safe = safe::create_safe_for_testing(
+        &vault,
+        cap,
+        vector::empty(),
+        0,
+        option::some(BENEFICIARY),
+        1000, // Too short
+        &clock,
+        ctx
+    );
+
+    abort 0
+}
+
+#[test, expected_failure(abort_code = safe::EDeadmanNotEnabled)]
+fun test_safe_claim_deadman_not_enabled() {
+    let mut scenario = ts::begin(OWNER);
+    {
+        let ctx = scenario.ctx();
+        let clock = clock::create_for_testing(ctx);
+        let (vault, cap) = vault::create_vault_for_testing(ctx);
+        // Create safe without deadman switch
+        let safe = safe::create_safe_for_testing(
+            &vault,
+            cap,
+            vector[GUARDIAN1, GUARDIAN2],
+            2,
+            option::none(), // No beneficiary = no deadman
+            0,
+            &clock,
+            ctx
+        );
+        safe::share_safe_for_testing(safe);
+        vault::transfer_vault_for_testing(vault, OWNER);
+        clock::share_for_testing(clock);
+    };
+
+    scenario.next_tx(BENEFICIARY);
+    {
+        let mut safe = scenario.take_shared<Safe>();
+        let clock = scenario.take_shared<clock::Clock>();
+
+        safe::claim(&mut safe, &clock, scenario.ctx());
+
+        ts::return_shared(safe);
+        ts::return_shared(clock);
+    };
+
+    scenario.end();
+}
+
+#[test, expected_failure(abort_code = safe::ENotBeneficiary)]
+fun test_safe_claim_not_beneficiary() {
+    let mut scenario = ts::begin(OWNER);
+    {
+        let ctx = scenario.ctx();
+        let clock = clock::create_for_testing(ctx);
+        let (vault, cap) = vault::create_vault_for_testing(ctx);
+        let safe = safe::create_safe_for_testing(
+            &vault,
+            cap,
+            vector::empty(),
+            0,
+            option::some(BENEFICIARY),
+            ONE_WEEK_MS,
+            &clock,
+            ctx
+        );
+        safe::share_safe_for_testing(safe);
+        vault::transfer_vault_for_testing(vault, OWNER);
+        clock::share_for_testing(clock);
+    };
+
+    // Someone who is not the beneficiary tries to claim
+    scenario.next_tx(RECIPIENT);
+    {
+        let mut safe = scenario.take_shared<Safe>();
+        let clock = scenario.take_shared<clock::Clock>();
+
+        safe::claim(&mut safe, &clock, scenario.ctx());
+
+        ts::return_shared(safe);
+        ts::return_shared(clock);
+    };
+
+    scenario.end();
+}
+
+// ============================================
+// SAFE TESTS - No features (just cap storage)
+// ============================================
+
+#[test]
+fun test_safe_create_minimal() {
+    let mut scenario = ts::begin(OWNER);
+    let ctx = scenario.ctx();
+    let clock = clock::create_for_testing(ctx);
+
+    let (vault, cap) = vault::create_vault_for_testing(ctx);
+
+    // Create safe with no guardians and no deadman switch
+    let safe = safe::create_safe_for_testing(
+        &vault,
+        cap,
+        vector::empty(),
+        0,
+        option::none(),
+        0,
+        &clock,
+        ctx
+    );
+
+    assert!(safe::safe_owner(&safe) == OWNER, 0);
+    assert!(safe::safe_guardians(&safe).length() == 0, 1);
+    assert!(option::is_none(&safe::safe_beneficiary(&safe)), 2);
+    assert!(safe::has_cap(&safe), 3);
+
+    safe::destroy_safe_for_testing(safe);
+    vault::destroy_vault_for_testing(vault);
+    clock::destroy_for_testing(clock);
+    scenario.end();
 }

@@ -1,3 +1,3 @@
 export const PACKAGE_ID =
-  "0xeba987cd0669a3f80908b995e6a75ea7cf3e85fb804221ee2517ffc6ca40b8f4";
+  "0x6c3bf94b2c3c2701381cbcc7cf1d8ebacf59f060e0b4ab82e584a3ea64925268";
 export const NETWORK = "testnet";

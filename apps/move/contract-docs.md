@@ -102,75 +102,123 @@ The share module enables secure sharing of vault items with other users via time
 - `seal_approve(id: vector<u8>, share: &Share, c: &Clock, ctx: &TxContext)`
   - Validates access for a recipient within the TTL window.
 
-## DeadMan Module
+## Safe Module
 
-The deadman module implements a dead man's switch for inheritance or emergency access.
+The Safe module is a **unified security module** that combines **Social Recovery** and **Deadman Switch** features. The Safe holds the vault Cap and provides two protection mechanisms:
+
+1. **Social Recovery**: Multi-signature recovery through trusted Guardians
+2. **Deadman Switch**: Automatic ownership transfer after owner inactivity
 
 ### Structs
 
-- **DeadManSwitch**: The switch object
+- **Safe**: A smart vault that holds the Cap and provides protection mechanisms
+  - `id: UID`: Unique identifier
   - `vault_id: ID`: ID of the protected vault
-  - `owner: address`: Creator/Owner address
-  - `beneficiary: address`: Heir address
-  - `inactivity_period_ms: u64`: Required inactivity duration before claim
-  - `last_activity_ms: u64`: Timestamp of last heartbeat
+  - `owner: address`: Current owner address
   - `cap: Option<Cap>`: The vault Cap (held in escrow)
-  - `claimed: bool`: Status flag
-
-### Events
-
-- `SwitchCreated`, `SwitchUpdated`, `SwitchClaimed`, `SwitchDisabled`
-
-### Functions
-
-- `setup(vault: &Vault, cap: Cap, beneficiary: address, inactivity_period_ms: u64, clock: &Clock, ctx: &mut TxContext)`
-  - Initializes the switch and locks the vault Cap inside.
-
-- `heartbeat(switch: &mut DeadManSwitch, clock: &Clock, ctx: &TxContext)`
-  - Resets the inactivity timer. Callable only by owner.
-
-- `claim(switch: &mut DeadManSwitch, clock: &Clock, ctx: &mut TxContext)`
-  - Transfers vault ownership to beneficiary if inactivity period has passed.
-
-- `disable(switch: DeadManSwitch, ctx: &TxContext)`
-  - Cancels the switch and returns the Cap to the owner.
-
-## Recovery Module
-
-The recovery module enables social recovery of a vault using guardians.
-
-### Structs
-
-- **Safe**: Shared object managing recovery state
-  - `vault_id: ID`: Protected vault ID
-  - `owner: address`: Current owner
-  - `guardians: vector<address>`: List of trusted guardians
-  - `threshold: u64`: Votes required to recover
-  - `cap: Option<Cap>`: Vault Cap (held in safe)
-  - `recovery_votes`: Tracks votes for new owners
+  - **Social Recovery fields:**
+    - `guardians: vector<address>`: List of trusted guardian addresses
+    - `threshold: u64`: Number of votes required to execute recovery
+    - `recovery_votes: VecMap<address, vector<address>>`: Tracks votes for new owners
+  - **Deadman Switch fields:**
+    - `beneficiary: Option<address>`: Heir address (None to disable deadman switch)
+    - `inactivity_period_ms: u64`: Required inactivity duration before claim
+    - `last_activity_ms: u64`: Timestamp of last heartbeat
+    - `deadman_claimed: bool`: Whether the deadman switch has been claimed
 
 - **FlashReceipt**: Hot potato struct ensuring Cap return during borrowing
+  - `safe_id: ID`: ID of the safe the Cap was borrowed from
 
 ### Events
 
-- `SafeCreated`, `RecoveryExecuted`, `SafeDisabled`
+- **SafeCreated**: Emitted when a safe is created
+  - `safe_id: ID`: ID of the safe
+  - `vault_id: ID`: ID of the protected vault
+  - `owner: address`: Owner address
+  - `has_guardians: bool`: Whether social recovery is enabled
+  - `has_deadman: bool`: Whether deadman switch is enabled
+
+- **SafeDisabled**: Emitted when a safe is destroyed
+  - `safe_id: ID`: ID of the safe
+  - `vault_id: ID`: ID of the vault
+
+- **RecoveryExecuted**: Emitted when social recovery is executed
+  - `safe_id: ID`: ID of the safe
+  - `old_owner: address`: Previous owner
+  - `new_owner: address`: New owner
+
+- **DeadmanClaimed**: Emitted when beneficiary claims the vault
+  - `safe_id: ID`: ID of the safe
+  - `vault_id: ID`: ID of the vault
+  - `beneficiary: address`: New owner (beneficiary)
+  - `claimed_at: u64`: Timestamp of claim
+
+- **HeartbeatRecorded**: Emitted when owner records activity
+  - `safe_id: ID`: ID of the safe
+  - `timestamp: u64`: Activity timestamp
+
+- **DeadmanUpdated**: Emitted when deadman settings are updated
+  - `safe_id: ID`: ID of the safe
+  - `beneficiary: address`: New beneficiary
+  - `inactivity_period_ms: u64`: New inactivity period
+
+- **GuardiansUpdated**: Emitted when guardian settings are updated
+  - `safe_id: ID`: ID of the safe
+  - `guardians: vector<address>`: New guardians list
+  - `threshold: u64`: New threshold
 
 ### Functions
 
-- `create_safe(vault: &Vault, cap: Cap, guardians: vector<address>, threshold: u64, ctx: &mut TxContext)`
-  - Wraps a vault Cap in a recovery Safe.
+#### Safe Creation & Destruction
+
+- `create_safe(vault: &Vault, cap: Cap, guardians: vector<address>, threshold: u64, beneficiary: Option<address>, inactivity_period_ms: u64, clock: &Clock, ctx: &mut TxContext)`
+  - Creates a new Safe with optional Social Recovery and/or Deadman Switch.
+  - `guardians`: List of guardian addresses (empty to disable social recovery)
+  - `threshold`: Number of votes required (0 if no guardians)
+  - `beneficiary`: Optional beneficiary for deadman switch (none to disable)
+  - `inactivity_period_ms`: Inactivity period (min 7 days, ignored if no beneficiary)
+
+- `disable_safe(safe: Safe, ctx: &TxContext)`
+  - Destroys the Safe and returns Cap to owner. Owner only.
+
+#### Cap Management (Flash Loan Pattern)
 
 - `borrow_cap(safe: &mut Safe, ctx: &TxContext): (Cap, FlashReceipt)`
-  - Temporarily borrows Cap for transaction usage. Must be returned same transaction.
+  - Temporarily borrows Cap for transaction usage. Must be returned same transaction. Owner only.
 
 - `return_cap(safe: &mut Safe, cap: Cap, receipt: FlashReceipt)`
   - Returns the borrowed Cap to the Safe.
 
+#### Deadman Switch Functions
+
+- `heartbeat(safe: &mut Safe, clock: &Clock, ctx: &TxContext)`
+  - Records owner activity and resets the deadman timer. Owner only.
+
+- `claim(safe: &mut Safe, clock: &Clock, ctx: &mut TxContext)`
+  - Beneficiary claims the vault after inactivity period expires. Transfers ownership via Cap.
+
+- `update_deadman(safe: &mut Safe, beneficiary: Option<address>, inactivity_period_ms: u64, clock: &Clock, ctx: &TxContext)`
+  - Updates deadman switch settings. Owner only.
+
+#### Social Recovery Functions
+
 - `approve_recovery(safe: &mut Safe, new_owner: address, ctx: &TxContext)`
   - Guardian votes to transfer ownership. Executes recovery if threshold met.
 
-- `disable_recovery(safe: Safe, ctx: &TxContext)`
-  - Destroys the Safe and returns Cap to owner.
+- `update_guardians(safe: &mut Safe, guardians: vector<address>, threshold: u64, ctx: &TxContext)`
+  - Updates guardian list and threshold. Owner only.
+
+#### View Functions
+
+- `safe_owner(safe: &Safe): address` - Returns current owner
+- `safe_vault_id(safe: &Safe): ID` - Returns vault ID
+- `safe_guardians(safe: &Safe): vector<address>` - Returns guardians list
+- `safe_threshold(safe: &Safe): u64` - Returns recovery threshold
+- `safe_beneficiary(safe: &Safe): Option<address>` - Returns beneficiary
+- `safe_inactivity_period_ms(safe: &Safe): u64` - Returns inactivity period
+- `safe_last_activity_ms(safe: &Safe): u64` - Returns last activity timestamp
+- `safe_deadman_claimed(safe: &Safe): bool` - Returns claim status
+- `has_cap(safe: &Safe): bool` - Returns whether safe holds the Cap
 
 ## JavaScript Integration Tips
 
@@ -182,10 +230,21 @@ The recovery module enables social recovery of a vault using guardians.
    - Shares are shared objects; anyone can read them, but only `seal_approve` validates access.
    - TTL is in milliseconds.
 
-3. **Social Recovery**:
+3. **Safe (Unified Protection)**:
+   - The Safe can be configured with:
+     - **Only Social Recovery**: Pass guardians & threshold, no beneficiary
+     - **Only Deadman Switch**: Pass beneficiary & inactivity_period, no guardians
+     - **Both features**: Pass all parameters
+     - **Neither (just Cap storage)**: Empty guardians, no beneficiary
    - The `borrow_cap` and `return_cap` must be called in the same Programmable Transaction Block (PTB).
    - This "Hot Potato" pattern ensures the Cap is never left in an unsafe state.
 
-4. **Dead Man's Switch**:
+4. **Deadman Switch Best Practices**:
    - Ensure `heartbeat` is called periodically before `inactivity_period_ms` expires.
    - Minimum inactivity period is enforced (7 days).
+   - When beneficiary claims, they become the new owner and receive a new Cap.
+
+5. **Social Recovery Best Practices**:
+   - Choose trusted guardians who won't collude.
+   - Set threshold appropriately (e.g., 2 of 3, 3 of 5).
+   - Guardian votes are per-address, so each guardian can only vote once per recovery target.
