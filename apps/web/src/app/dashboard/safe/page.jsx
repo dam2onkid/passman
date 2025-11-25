@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { DeadmanSwitchManager } from "@/components/deadman-switch-manager";
+import { SafeManager } from "@/components/safe-manager";
 
 export default function Page() {
   return (
@@ -23,15 +23,16 @@ export default function Page() {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbPage>Deadman</BreadcrumbPage>
+                <BreadcrumbPage>Safe</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
         </div>
       </header>
       <div className="flex flex-1 flex-col h-[calc(100vh-4rem)]">
-        <DeadmanSwitchManager />
+        <SafeManager />
       </div>
     </>
   );
 }
+

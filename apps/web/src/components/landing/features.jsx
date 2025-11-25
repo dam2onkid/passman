@@ -1,4 +1,4 @@
-import { Shield, Lock, Key, Share, Monitor, Code, Database, Timer } from "lucide-react";
+import { Shield, Lock, Key, Share, Monitor, Code, Database, Timer, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 const features = [
@@ -21,7 +21,12 @@ const features = [
   {
     icon: Timer,
     title: "Deadman Switch",
-    description: "Automated protocol to transfer access to trusted contacts if you become inactive",
+    description: "Automated protocol to transfer access to trusted beneficiaries if you become inactive",
+  },
+  {
+    icon: Users,
+    title: "Social Recovery",
+    description: "Recover your vault through trusted guardians with multi-signature approval",
   },
   {
     icon: Key,

@@ -22,18 +22,8 @@ export default function useVaults() {
     try {
       setLoading(true);
 
-      // Fetch Vault objects
-      const vaultRes = await suiClient.getOwnedObjects({
-        owner: currentAccount.address,
-        options: {
-          showContent: true,
-        },
-        filter: {
-          StructType: `${packageId}::vault::Vault`,
-        },
-      });
-
-      // Fetch Cap objects
+      // Fetch Cap objects owned by user
+      // Caps are still owned objects, each Cap references a vault_id
       const capRes = await suiClient.getOwnedObjects({
         owner: currentAccount.address,
         options: {
@@ -42,15 +32,6 @@ export default function useVaults() {
         filter: {
           StructType: `${packageId}::vault::Cap`,
         },
-      });
-
-      // Process vaults
-      const vaults = vaultRes.data.map((vaultObj) => {
-        const vaultFields = vaultObj.data?.content?.fields || {};
-        return {
-          id: vaultObj.data?.objectId,
-          name: vaultFields.name,
-        };
       });
 
       // Process caps
@@ -62,12 +43,27 @@ export default function useVaults() {
         };
       });
 
-      // Match vaults with their corresponding caps
+      // Fetch vault details for each cap (Vaults are now shared objects)
       const pairs = [];
-      for (const vault of vaults) {
-        const matchingCap = caps.find((cap) => cap.vaultId === vault.id);
-        if (matchingCap) {
-          pairs.push({ vault, cap: matchingCap });
+      for (const cap of caps) {
+        if (cap.vaultId) {
+          try {
+            const vaultDetails = await suiClient.getObject({
+              id: cap.vaultId,
+              options: { showContent: true },
+            });
+
+            if (vaultDetails.data?.content?.fields) {
+              const vaultFields = vaultDetails.data.content.fields;
+              const vault = {
+                id: vaultDetails.data.objectId,
+                name: vaultFields.name,
+              };
+              pairs.push({ vault, cap });
+            }
+          } catch (e) {
+            console.log(`Failed to fetch vault ${cap.vaultId}:`, e);
+          }
         }
       }
 

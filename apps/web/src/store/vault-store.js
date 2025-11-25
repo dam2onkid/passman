@@ -4,6 +4,13 @@ import { persist } from "zustand/middleware";
 const useVaultStore = create(
   persist(
     (set) => ({
+      // Active vault with cap and safe info
+      // Structure: {
+      //   vault: { id, name },
+      //   cap: { id, vaultId },
+      //   capSource: 'direct' | 'safe',
+      //   safe: null | { id, owner, guardians, threshold, beneficiary, ... }
+      // }
       activeVaultCapPair: null,
       setActiveVaultCapPair: (vaultCapPair) =>
         set({ activeVaultCapPair: vaultCapPair }),

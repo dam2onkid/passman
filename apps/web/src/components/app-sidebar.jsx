@@ -48,8 +48,8 @@ const data = {
       icon: Star,
     },
     {
-      title: "Deadman Switch",
-      url: "/dashboard/deadman",
+      title: "Safe",
+      url: "/dashboard/safe",
       icon: Shield,
     },
   ],

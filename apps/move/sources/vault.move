@@ -75,7 +75,8 @@ fun create_item(cap: &Cap, name: String, category: String, vault: &mut Vault, no
     item
 }
 
-entry fun update_item(cap: &Cap, name: String, walrus_blob_id: String, item: &mut Item) {
+/// Update item - public to allow PTB calls with borrowed Cap
+public fun update_item(cap: &Cap, name: String, walrus_blob_id: String, item: &mut Item) {
     assert!(cap.vault_id == item.vault_id, ENotOwner);
     item.name = name;
     item.walrus_blob_id = walrus_blob_id;
@@ -83,7 +84,8 @@ entry fun update_item(cap: &Cap, name: String, walrus_blob_id: String, item: &mu
     event::emit(ItemUpdated { item_id: object::id(item), vault_id: item.vault_id });
 }
 
-entry fun delete_item(cap: &Cap, vault: &mut Vault, item: Item) {
+/// Delete item - public to allow PTB calls with borrowed Cap
+public fun delete_item(cap: &Cap, vault: &mut Vault, item: Item) {
     assert!(cap.vault_id == item.vault_id, ENotAuthorized);
     let item_id = object::id(&item);
     event::emit(ItemDeleted { item_id, vault_id: item.vault_id, name: item.name });
@@ -100,11 +102,14 @@ entry fun delete_item(cap: &Cap, vault: &mut Vault, item: Item) {
 entry fun create_vault_entry(name: String, ctx: &mut TxContext) {
     let (vault, cap) = create_vault(name, ctx);
     event::emit(VaultCreated {vault_id: object::id(&vault), owner: ctx.sender()});
-    transfer::transfer(cap,  ctx.sender());
-    transfer::transfer(vault,  ctx.sender())
+    transfer::transfer(cap, ctx.sender());
+    // Vault is shared so anyone can reference it (for Seal decryption)
+    // but only Cap holders can modify it
+    transfer::share_object(vault)
 }
 
-entry fun create_item_entry(cap: &Cap, name: String, category: String, vault: &mut Vault, nonce: vector<u8>, walrus_blob_id: String, ctx: &mut TxContext) {
+/// Create item entry - public to allow PTB calls with borrowed Cap
+public fun create_item_entry(cap: &Cap, name: String, category: String, vault: &mut Vault, nonce: vector<u8>, walrus_blob_id: String, ctx: &mut TxContext) {
     let item = create_item(
         cap,
         name,
@@ -138,6 +143,10 @@ public(package) fun verify_cap(cap: &Cap, vault: &Vault): bool {
     cap.vault_id == object::id(vault)
 }
 
+public(package) fun cap_vault_id(cap: &Cap): ID {
+    cap.vault_id
+}
+
 public(package) fun transfer_ownership(old_cap: Cap, new_owner: address, ctx: &mut TxContext) {
     let Cap { id: cap_id, vault_id } = old_cap;
     object::delete(cap_id);
@@ -150,46 +159,44 @@ public(package) fun transfer_ownership(old_cap: Cap, new_owner: address, ctx: &m
     transfer::transfer(new_cap, new_owner);
 }
 
-// === Test ===
+// === Test Helpers ===
 
-#[test]
-fun new_vault_for_testing(): (Cap, Vault) {
+#[test_only]
+public fun create_vault_for_testing(ctx: &mut TxContext): (Vault, Cap) {
     use std::string::utf8;
-    let ctx = &mut tx_context::dummy();
-    let (vault, cap) = create_vault(utf8(b"test"), ctx);
-
-    (cap, vault)
+    create_vault(utf8(b"test_vault"), ctx)
 }
 
 #[test_only]
-fun destroy_for_testing(cap: Cap, vault: Vault) {
-    let Cap { id, .. } = cap;
-    object::delete(id);
+public fun create_item_for_testing(cap: &Cap, vault: &mut Vault, ctx: &mut TxContext): Item {
+    use std::string::utf8;
+    create_item(cap, utf8(b"test_item"), utf8(b"password"), vault, vector::empty(), utf8(b"blob_123"), ctx)
+}
+
+#[test_only]
+public fun destroy_vault_for_testing(vault: Vault) {
     let Vault { id, .. } = vault;
     object::delete(id);
 }
 
-#[test]
-fun new_item_for_testing(): Item {
-    use std::string::utf8;
-    use std::debug::print;
-    let ctx = &mut tx_context::dummy();
-    let (cap, vault) = new_vault_for_testing();
-    let mut _vault = vault;
-    let item = create_item(
-        &cap,
-        utf8(b"item_1"),
-        utf8(b"wallet"),
-        &mut _vault,
-        vector::empty(),
-        utf8(b"test_blob_id"),
-        ctx
-    );
-    let mut id = vector::empty();
-    id.append(object::id(&_vault).to_bytes());
-    let result = check_policy(id, &_vault, &item);
-    print(&result);
+#[test_only]
+public fun destroy_cap_for_testing(cap: Cap) {
+    let Cap { id, .. } = cap;
+    object::delete(id);
+}
 
-    destroy_for_testing(cap, _vault);
-    item
+#[test_only]
+public fun destroy_item_for_testing(item: Item) {
+    let Item { id, .. } = item;
+    object::delete(id);
+}
+
+#[test_only]
+public fun transfer_vault_for_testing(vault: Vault, recipient: address) {
+    transfer::transfer(vault, recipient);
+}
+
+#[test_only]
+public fun share_vault_for_testing(vault: Vault) {
+    transfer::share_object(vault);
 }
