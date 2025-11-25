@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronsUpDown, Plus, Vault, Loader2, Shield } from "lucide-react";
+import { ChevronsUpDown, Plus, Vault, Loader2, Shield, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -80,11 +80,12 @@ export function VaultSwitcher() {
 
   const filteredVaultCapPairs = vaultCapPairs
     .filter(({ vault }) => vault?.id !== activeVaultCapPair?.vault?.id)
-    .map(({ vault, cap, capSource, safe }) => ({
+    .map(({ vault, cap, capSource, safe, isRecovered }) => ({
       vault,
       cap,
       capSource,
       safe,
+      isRecovered,
     }));
 
   if (loading) {
@@ -116,7 +117,11 @@ export function VaultSwitcher() {
           <p className="text-sm font-bold text-white">
             {activeVaultCapPair?.vault?.name?.charAt(0)}
           </p>
-          {activeVaultCapPair?.safe && (
+          {activeVaultCapPair?.isRecovered ? (
+            <div className="absolute -top-1 -right-1 bg-blue-500 rounded-full p-0.5">
+              <UserCheck className="size-2.5 text-white" />
+            </div>
+          ) : activeVaultCapPair?.safe && (
             <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-0.5">
               <Shield className="size-2.5 text-white" />
             </div>
@@ -125,7 +130,11 @@ export function VaultSwitcher() {
         <div className="grid flex-1 text-left text-sm leading-tight">
           <span className="truncate font-medium flex items-center gap-1.5">
             {activeVaultCapPair?.vault?.name}
-            {activeVaultCapPair?.safe && (
+            {activeVaultCapPair?.isRecovered ? (
+              <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 text-blue-600 border-blue-600">
+                Recovered
+              </Badge>
+            ) : activeVaultCapPair?.safe && (
               <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 text-green-600 border-green-600">
                 Safe
               </Badge>
@@ -159,17 +168,21 @@ export function VaultSwitcher() {
                 <DropdownMenuLabel className="text-muted-foreground text-xs">
                   Vaults
                 </DropdownMenuLabel>
-                {filteredVaultCapPairs.map(({ vault, cap, capSource, safe }, index) => (
+                {filteredVaultCapPairs.map(({ vault, cap, capSource, safe, isRecovered }, index) => (
                   <DropdownMenuItem
                     key={vault.name}
-                    onClick={() => setActiveVaultCapPair({ vault, cap, capSource, safe })}
+                    onClick={() => setActiveVaultCapPair({ vault, cap, capSource, safe, isRecovered })}
                     className="gap-2 p-2"
                   >
                     <div className="flex size-6 items-center justify-center rounded-md border relative">
                       <p className="text-xs font-bold text-white">
                         {vault.name.charAt(0)}
                       </p>
-                      {safe && (
+                      {isRecovered ? (
+                        <div className="absolute -top-1 -right-1 bg-blue-500 rounded-full p-0.5">
+                          <UserCheck className="size-2 text-white" />
+                        </div>
+                      ) : safe && (
                         <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-0.5">
                           <Shield className="size-2 text-white" />
                         </div>
@@ -177,7 +190,11 @@ export function VaultSwitcher() {
                     </div>
                     <span className="flex items-center gap-1.5">
                       {vault.name}
-                      {safe && (
+                      {isRecovered ? (
+                        <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 text-blue-600 border-blue-600">
+                          Recovered
+                        </Badge>
+                      ) : safe && (
                         <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 text-green-600 border-green-600">
                           Safe
                         </Badge>

@@ -25,7 +25,7 @@ export default function useVaults() {
     try {
       setLoading(true);
 
-      // Fetch Vault objects
+      // Fetch Vault objects owned directly by user
       const vaultRes = await suiClient.getOwnedObjects({
         owner: currentAccount.address,
         options: {
@@ -66,11 +66,16 @@ export default function useVaults() {
       });
 
       // Fetch Safe objects where user is owner (via events)
+      // This includes Safes acquired via social recovery
       const safes = await fetchUserSafes(suiClient, currentAccount.address);
 
       // Match vaults with their corresponding caps (direct or in safe)
       const pairs = [];
+      const processedVaultIds = new Set();
+
       for (const vault of vaults) {
+        processedVaultIds.add(vault.id);
+
         // First check for direct cap
         const directCap = directCaps.find((cap) => cap.vaultId === vault.id);
 
@@ -82,15 +87,51 @@ export default function useVaults() {
             safe: null,
           });
         } else {
-          // Check if cap is in a Safe
-          const safe = safes.find((s) => s.vault_id === vault.id && s.has_cap);
+          // Check if there's a Safe for this vault (regardless of cap status)
+          const safe = safes.find((s) => s.vault_id === vault.id);
           if (safe) {
             pairs.push({
               vault,
-              cap: { id: null, vaultId: vault.id }, // Cap is in safe, no direct ID
+              cap: safe.has_cap ? { id: null, vaultId: vault.id } : null,
               capSource: "safe",
               safe,
             });
+          }
+        }
+      }
+
+      // Handle recovered vaults: Safes where user is owner but doesn't own the Vault object
+      // This happens after social recovery - the Safe's owner changes but Vault stays with original owner
+      const recoveredSafes = safes.filter(
+        (safe) => !processedVaultIds.has(safe.vault_id) && safe.has_cap
+      );
+
+      if (recoveredSafes.length > 0) {
+        // Fetch vault details for recovered safes
+        for (const safe of recoveredSafes) {
+          try {
+            const vaultDetails = await suiClient.getObject({
+              id: safe.vault_id,
+              options: { showContent: true },
+            });
+
+            if (vaultDetails.data?.content?.fields) {
+              const vaultFields = vaultDetails.data.content.fields;
+              const recoveredVault = {
+                id: vaultDetails.data.objectId,
+                name: vaultFields.name,
+              };
+
+              pairs.push({
+                vault: recoveredVault,
+                cap: { id: null, vaultId: safe.vault_id },
+                capSource: "safe",
+                safe,
+                isRecovered: true, // Flag to indicate this vault was acquired via recovery
+              });
+            }
+          } catch (e) {
+            console.log(`Failed to fetch recovered vault ${safe.vault_id}:`, e);
           }
         }
       }
@@ -111,9 +152,11 @@ export default function useVaults() {
           const updatedPair = pairs.find(
             (pair) => pair.vault.id === activeVaultCapPair.vault?.id
           );
-          if (updatedPair &&
-              (updatedPair.capSource !== activeVaultCapPair.capSource ||
-               updatedPair.safe?.id !== activeVaultCapPair.safe?.id)) {
+          if (
+            updatedPair &&
+            (updatedPair.capSource !== activeVaultCapPair.capSource ||
+              updatedPair.safe?.id !== activeVaultCapPair.safe?.id)
+          ) {
             setActiveVaultCapPair(updatedPair);
           }
         }
@@ -195,16 +238,21 @@ async function fetchUserSafes(client, userAddress) {
  * Parse Safe fields from on-chain data
  */
 function parseSafeFields(objectId, fields) {
+  // Check has_cap - Option<Cap> in Sui can be represented as:
+  // - null/undefined when None
+  // - An object with fields when Some
+  const hasCap = fields.cap !== null && fields.cap !== undefined;
+
   return {
     id: objectId,
     vault_id: fields.vault_id,
     owner: fields.owner,
-    has_cap: fields.cap !== null && fields.cap !== undefined && fields.cap?.fields !== undefined,
+    has_cap: hasCap,
     // Social Recovery
     guardians: fields.guardians || [],
     threshold: Number(fields.threshold || 0),
     // Deadman Switch
-    beneficiary: fields.beneficiary?.fields?.some || null,
+    beneficiary: fields.beneficiary?.fields?.some || fields.beneficiary || null,
     inactivity_period_ms: Number(fields.inactivity_period_ms || 0),
     last_activity_ms: Number(fields.last_activity_ms || 0),
     deadman_claimed: fields.deadman_claimed || false,
