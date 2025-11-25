@@ -75,7 +75,8 @@ fun create_item(cap: &Cap, name: String, category: String, vault: &mut Vault, no
     item
 }
 
-entry fun update_item(cap: &Cap, name: String, walrus_blob_id: String, item: &mut Item) {
+/// Update item - public to allow PTB calls with borrowed Cap
+public fun update_item(cap: &Cap, name: String, walrus_blob_id: String, item: &mut Item) {
     assert!(cap.vault_id == item.vault_id, ENotOwner);
     item.name = name;
     item.walrus_blob_id = walrus_blob_id;
@@ -83,7 +84,8 @@ entry fun update_item(cap: &Cap, name: String, walrus_blob_id: String, item: &mu
     event::emit(ItemUpdated { item_id: object::id(item), vault_id: item.vault_id });
 }
 
-entry fun delete_item(cap: &Cap, vault: &mut Vault, item: Item) {
+/// Delete item - public to allow PTB calls with borrowed Cap
+public fun delete_item(cap: &Cap, vault: &mut Vault, item: Item) {
     assert!(cap.vault_id == item.vault_id, ENotAuthorized);
     let item_id = object::id(&item);
     event::emit(ItemDeleted { item_id, vault_id: item.vault_id, name: item.name });
@@ -104,7 +106,8 @@ entry fun create_vault_entry(name: String, ctx: &mut TxContext) {
     transfer::transfer(vault,  ctx.sender())
 }
 
-entry fun create_item_entry(cap: &Cap, name: String, category: String, vault: &mut Vault, nonce: vector<u8>, walrus_blob_id: String, ctx: &mut TxContext) {
+/// Create item entry - public to allow PTB calls with borrowed Cap
+public fun create_item_entry(cap: &Cap, name: String, category: String, vault: &mut Vault, nonce: vector<u8>, walrus_blob_id: String, ctx: &mut TxContext) {
     let item = create_item(
         cap,
         name,
