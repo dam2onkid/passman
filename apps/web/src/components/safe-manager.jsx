@@ -523,7 +523,11 @@ export function SafeManager() {
             <TabsTrigger value="my-safe" className="gap-2">
               <Shield className="h-4 w-4" />
               My Safe
-              {safe && <Badge variant="secondary" className="ml-1 text-xs">1</Badge>}
+              {safe && (
+                <Badge variant="secondary" className="ml-1 text-xs">
+                  1
+                </Badge>
+              )}
             </TabsTrigger>
             <TabsTrigger value="guardian" className="gap-2">
               <Users className="h-4 w-4" />
@@ -784,8 +788,7 @@ function MySafeContent({
                     <SelectContent>
                       {Array.from(
                         {
-                          length:
-                            guardians.filter((g) => g.trim()).length || 1,
+                          length: guardians.filter((g) => g.trim()).length || 1,
                         },
                         (_, i) => i + 1
                       ).map((num) => (
@@ -899,11 +902,12 @@ function MySafeContent({
         <Shield className="h-4 w-4" />
         <AlertTitle className="flex items-center gap-2">
           Safe Active
-          {safe.deadman_claimed && (
-            <Badge variant="destructive">Claimed</Badge>
-          )}
+          {safe.deadman_claimed && <Badge variant="destructive">Claimed</Badge>}
           {safe.isRecovered && (
-            <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+            <Badge
+              variant="secondary"
+              className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+            >
               <UserCheck className="h-3 w-3 mr-1" />
               Recovered
             </Badge>
@@ -959,28 +963,29 @@ function MySafeContent({
       </Alert>
 
       {/* Recovery Ready Alert - for pending recoveries that have reached threshold */}
-      {safe.recovery_votes && Object.entries(safe.recovery_votes).some(
-        ([_, voters]) => voters.length >= safe.threshold
-      ) && (
-        <Alert className="border-amber-500 bg-amber-50 dark:bg-amber-950/20">
-          <AlertTriangle className="h-4 w-4 text-amber-600" />
-          <AlertTitle className="text-amber-700 dark:text-amber-400">
-            Recovery Pending Execution
-          </AlertTitle>
-          <AlertDescription className="text-amber-600 dark:text-amber-300">
-            {Object.entries(safe.recovery_votes)
-              .filter(([_, voters]) => voters.length >= safe.threshold)
-              .map(([candidate, voters]) => (
-                <div key={candidate} className="mt-2">
-                  <strong>{formatAddress(candidate)}</strong> has{" "}
-                  {voters.length}/{safe.threshold} guardian votes. The next
-                  guardian vote will execute the recovery and transfer
-                  ownership.
-                </div>
-              ))}
-          </AlertDescription>
-        </Alert>
-      )}
+      {safe.recovery_votes &&
+        Object.entries(safe.recovery_votes).some(
+          ([_, voters]) => voters.length >= safe.threshold
+        ) && (
+          <Alert className="border-amber-500 bg-amber-50 dark:bg-amber-950/20">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <AlertTitle className="text-amber-700 dark:text-amber-400">
+              Recovery Pending Execution
+            </AlertTitle>
+            <AlertDescription className="text-amber-600 dark:text-amber-300">
+              {Object.entries(safe.recovery_votes)
+                .filter(([_, voters]) => voters.length >= safe.threshold)
+                .map(([candidate, voters]) => (
+                  <div key={candidate} className="mt-2">
+                    <strong>{formatAddress(candidate)}</strong> has{" "}
+                    {voters.length}/{safe.threshold} guardian votes. The next
+                    guardian vote will execute the recovery and transfer
+                    ownership.
+                  </div>
+                ))}
+            </AlertDescription>
+          </Alert>
+        )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4">
@@ -1664,7 +1669,9 @@ function GuardianSafesContent({
                         <span>{formatAddress(event.newOwner)}</span>
                         {event.timestamp && (
                           <span className="ml-auto">
-                            {new Date(Number(event.timestamp)).toLocaleDateString()}
+                            {new Date(
+                              Number(event.timestamp)
+                            ).toLocaleDateString()}
                           </span>
                         )}
                       </div>
@@ -1677,9 +1684,7 @@ function GuardianSafesContent({
                   <Button
                     variant="ghost"
                     className="w-full justify-between"
-                    onClick={() =>
-                      setExpandedSafe(isExpanded ? null : safe.id)
-                    }
+                    onClick={() => setExpandedSafe(isExpanded ? null : safe.id)}
                   >
                     <span className="flex items-center gap-2">
                       <Plus className="h-4 w-4" />
@@ -1817,8 +1822,8 @@ function BeneficiarySafesContent({
                 canClaim
                   ? "border-green-500 bg-green-50/50 dark:bg-green-950/20 hover:shadow-lg"
                   : safe.deadman_claimed
-                  ? "border-muted bg-muted/20"
-                  : "hover:border-amber-300 dark:hover:border-amber-700"
+                    ? "border-muted bg-muted/20"
+                    : "hover:border-amber-300 dark:hover:border-amber-700"
               }`}
             >
               <CardHeader className="pb-3">
@@ -1890,8 +1895,8 @@ function BeneficiarySafesContent({
                     <p className="text-xs text-muted-foreground">
                       Last activity:{" "}
                       {new Date(safe.last_activity_ms).toLocaleDateString()} •
-                      Period:{" "}
-                      {Math.floor(safe.inactivity_period_ms / 86400000)} days
+                      Period: {Math.floor(safe.inactivity_period_ms / 86400000)}{" "}
+                      days
                     </p>
                   </div>
                 )}
@@ -1902,9 +1907,7 @@ function BeneficiarySafesContent({
                     onClick={() => handleClaimSafe(safe.id, refetch)}
                     disabled={!canClaim || isProcessing}
                     className={`w-full ${
-                      canClaim
-                        ? "bg-green-600 hover:bg-green-700"
-                        : ""
+                      canClaim ? "bg-green-600 hover:bg-green-700" : ""
                     }`}
                     size="lg"
                   >

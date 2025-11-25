@@ -25,18 +25,8 @@ export default function useVaults() {
     try {
       setLoading(true);
 
-      // Fetch Vault objects owned directly by user
-      const vaultRes = await suiClient.getOwnedObjects({
-        owner: currentAccount.address,
-        options: {
-          showContent: true,
-        },
-        filter: {
-          StructType: `${packageId}::vault::Vault`,
-        },
-      });
-
       // Fetch Cap objects owned directly by user
+      // Caps are still owned objects, each Cap references a vault_id
       const capRes = await suiClient.getOwnedObjects({
         owner: currentAccount.address,
         options: {
@@ -45,15 +35,6 @@ export default function useVaults() {
         filter: {
           StructType: `${packageId}::vault::Cap`,
         },
-      });
-
-      // Process vaults
-      const vaults = vaultRes.data.map((vaultObj) => {
-        const vaultFields = vaultObj.data?.content?.fields || {};
-        return {
-          id: vaultObj.data?.objectId,
-          name: vaultFields.name,
-        };
       });
 
       // Process caps (directly owned)
@@ -69,69 +50,80 @@ export default function useVaults() {
       // This includes Safes acquired via social recovery
       const safes = await fetchUserSafes(suiClient, currentAccount.address);
 
-      // Match vaults with their corresponding caps (direct or in safe)
-      const pairs = [];
-      const processedVaultIds = new Set();
+      // Collect all vault IDs we need to fetch (from caps and safes)
+      const vaultIdsToFetch = new Set();
 
-      for (const vault of vaults) {
-        processedVaultIds.add(vault.id);
-
-        // First check for direct cap
-        const directCap = directCaps.find((cap) => cap.vaultId === vault.id);
-
-        if (directCap) {
-          pairs.push({
-            vault,
-            cap: directCap,
-            capSource: "direct",
-            safe: null,
-          });
-        } else {
-          // Check if there's a Safe for this vault (regardless of cap status)
-          const safe = safes.find((s) => s.vault_id === vault.id);
-          if (safe) {
-            pairs.push({
-              vault,
-              cap: safe.has_cap ? { id: null, vaultId: vault.id } : null,
-              capSource: "safe",
-              safe,
-            });
-          }
+      // Add vault IDs from direct caps
+      for (const cap of directCaps) {
+        if (cap.vaultId) {
+          vaultIdsToFetch.add(cap.vaultId);
         }
       }
 
-      // Handle recovered vaults: Safes where user is owner but doesn't own the Vault object
-      // This happens after social recovery - the Safe's owner changes but Vault stays with original owner
-      const recoveredSafes = safes.filter(
-        (safe) => !processedVaultIds.has(safe.vault_id) && safe.has_cap
-      );
+      // Add vault IDs from safes
+      for (const safe of safes) {
+        if (safe.vault_id) {
+          vaultIdsToFetch.add(safe.vault_id);
+        }
+      }
 
-      if (recoveredSafes.length > 0) {
-        // Fetch vault details for recovered safes
-        for (const safe of recoveredSafes) {
-          try {
-            const vaultDetails = await suiClient.getObject({
-              id: safe.vault_id,
-              options: { showContent: true },
+      // Fetch all vault details (Vaults are now shared objects)
+      const vaultMap = new Map();
+      for (const vaultId of vaultIdsToFetch) {
+        try {
+          const vaultDetails = await suiClient.getObject({
+            id: vaultId,
+            options: { showContent: true },
+          });
+
+          if (vaultDetails.data?.content?.fields) {
+            const vaultFields = vaultDetails.data.content.fields;
+            vaultMap.set(vaultId, {
+              id: vaultDetails.data.objectId,
+              name: vaultFields.name,
             });
+          }
+        } catch (e) {
+          console.log(`Failed to fetch vault ${vaultId}:`, e);
+        }
+      }
 
-            if (vaultDetails.data?.content?.fields) {
-              const vaultFields = vaultDetails.data.content.fields;
-              const recoveredVault = {
-                id: vaultDetails.data.objectId,
-                name: vaultFields.name,
-              };
+      // Build vault-cap pairs
+      const pairs = [];
+      const processedVaultIds = new Set();
 
-              pairs.push({
-                vault: recoveredVault,
-                cap: { id: null, vaultId: safe.vault_id },
-                capSource: "safe",
-                safe,
-                isRecovered: true, // Flag to indicate this vault was acquired via recovery
-              });
-            }
-          } catch (e) {
-            console.log(`Failed to fetch recovered vault ${safe.vault_id}:`, e);
+      // Process vaults from direct caps first
+      for (const cap of directCaps) {
+        const vault = vaultMap.get(cap.vaultId);
+        if (vault) {
+          processedVaultIds.add(vault.id);
+
+          // Check if there's also a Safe for this vault
+          const safe = safes.find((s) => s.vault_id === vault.id);
+
+          pairs.push({
+            vault,
+            cap,
+            capSource: "direct",
+            safe: safe || null,
+          });
+        }
+      }
+
+      // Process vaults from safes (where user doesn't have direct cap)
+      for (const safe of safes) {
+        if (!processedVaultIds.has(safe.vault_id) && safe.has_cap) {
+          const vault = vaultMap.get(safe.vault_id);
+          if (vault) {
+            processedVaultIds.add(vault.id);
+
+            pairs.push({
+              vault,
+              cap: { id: null, vaultId: safe.vault_id },
+              capSource: "safe",
+              safe,
+              isRecovered: true, // Vault accessed via Safe without direct cap = recovered
+            });
           }
         }
       }

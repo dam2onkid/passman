@@ -237,14 +237,14 @@ fun test_safe_borrow_and_return_cap() {
         );
 
         safe::share_safe_for_testing(safe);
-        vault::transfer_vault_for_testing(vault, OWNER);
+        vault::share_vault_for_testing(vault);
         clock::share_for_testing(clock);
     };
 
     scenario.next_tx(OWNER);
     {
         let mut safe = scenario.take_shared<Safe>();
-        let vault = scenario.take_from_sender<Vault>();
+        let vault = scenario.take_shared<Vault>();
 
         let (cap, receipt) = safe::borrow_cap(&mut safe, scenario.ctx());
 
@@ -253,7 +253,7 @@ fun test_safe_borrow_and_return_cap() {
         safe::return_cap(&mut safe, cap, receipt);
 
         ts::return_shared(safe);
-        ts::return_to_sender(&scenario, vault);
+        ts::return_shared(vault);
     };
 
     scenario.end();
@@ -272,7 +272,7 @@ fun test_safe_borrow_cap_not_owner() {
         );
 
         safe::share_safe_for_testing(safe);
-        vault::transfer_vault_for_testing(vault, OWNER);
+        vault::share_vault_for_testing(vault);
         clock::share_for_testing(clock);
     };
 
@@ -298,7 +298,7 @@ fun test_safe_approve_single_vote() {
         );
 
         safe::share_safe_for_testing(safe);
-        vault::transfer_vault_for_testing(vault, OWNER);
+        vault::share_vault_for_testing(vault);
         clock::share_for_testing(clock);
     };
 
@@ -330,7 +330,7 @@ fun test_safe_approve_threshold_met() {
         );
 
         safe::share_safe_for_testing(safe);
-        vault::transfer_vault_for_testing(vault, OWNER);
+        vault::share_vault_for_testing(vault);
         clock::share_for_testing(clock);
     };
 
@@ -368,7 +368,7 @@ fun test_safe_approve_not_guardian() {
         );
 
         safe::share_safe_for_testing(safe);
-        vault::transfer_vault_for_testing(vault, OWNER);
+        vault::share_vault_for_testing(vault);
         clock::share_for_testing(clock);
     };
 
@@ -395,7 +395,7 @@ fun test_safe_approve_duplicate_vote() {
         );
 
         safe::share_safe_for_testing(safe);
-        vault::transfer_vault_for_testing(vault, OWNER);
+        vault::share_vault_for_testing(vault);
         clock::share_for_testing(clock);
     };
 
@@ -526,7 +526,7 @@ fun test_safe_heartbeat() {
             ctx
         );
         safe::share_safe_for_testing(safe);
-        vault::transfer_vault_for_testing(vault, OWNER);
+        vault::share_vault_for_testing(vault);
         clock::share_for_testing(clock);
     };
 
@@ -562,7 +562,7 @@ fun test_safe_heartbeat_not_owner() {
             ctx
         );
         safe::share_safe_for_testing(safe);
-        vault::transfer_vault_for_testing(vault, OWNER);
+        vault::share_vault_for_testing(vault);
         clock::share_for_testing(clock);
     };
 
@@ -598,7 +598,7 @@ fun test_safe_claim_not_expired() {
             ctx
         );
         safe::share_safe_for_testing(safe);
-        vault::transfer_vault_for_testing(vault, OWNER);
+        vault::share_vault_for_testing(vault);
         clock::share_for_testing(clock);
     };
 
@@ -656,7 +656,7 @@ fun test_safe_claim_deadman_not_enabled() {
             ctx
         );
         safe::share_safe_for_testing(safe);
-        vault::transfer_vault_for_testing(vault, OWNER);
+        vault::share_vault_for_testing(vault);
         clock::share_for_testing(clock);
     };
 
@@ -692,7 +692,7 @@ fun test_safe_claim_not_beneficiary() {
             ctx
         );
         safe::share_safe_for_testing(safe);
-        vault::transfer_vault_for_testing(vault, OWNER);
+        vault::share_vault_for_testing(vault);
         clock::share_for_testing(clock);
     };
 

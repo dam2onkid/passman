@@ -102,8 +102,10 @@ public fun delete_item(cap: &Cap, vault: &mut Vault, item: Item) {
 entry fun create_vault_entry(name: String, ctx: &mut TxContext) {
     let (vault, cap) = create_vault(name, ctx);
     event::emit(VaultCreated {vault_id: object::id(&vault), owner: ctx.sender()});
-    transfer::transfer(cap,  ctx.sender());
-    transfer::transfer(vault,  ctx.sender())
+    transfer::transfer(cap, ctx.sender());
+    // Vault is shared so anyone can reference it (for Seal decryption)
+    // but only Cap holders can modify it
+    transfer::share_object(vault)
 }
 
 /// Create item entry - public to allow PTB calls with borrowed Cap
