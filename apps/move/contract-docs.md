@@ -9,17 +9,17 @@ The vault module handles the creation and management of password vaults and item
 ### Structs
 
 - **Item**: Represents a password or credential item
-
   - `id: UID`: Unique identifier
   - `name: String`: Name of the item
   - `category: String`: Category of the item (e.g., "password", "wallet")
   - `vault_id: ID`: ID of the vault this item belongs to
-  - `data: vector<u8>`: Encrypted data of the item
+  - `nonce: vector<u8>`: Nonce used for encryption/key derivation
+  - `walrus_blob_id: String`: ID of the encrypted data blob stored on Walrus
 
 - **Vault**: Represents a collection of items
-
   - `id: UID`: Unique identifier
   - `name: String`: Name of the vault
+  - `items: vector<ID>`: List of item IDs in the vault
 
 - **Cap**: Capability object that grants ownership rights to a vault
   - `id: UID`: Unique identifier
@@ -28,19 +28,16 @@ The vault module handles the creation and management of password vaults and item
 ### Events
 
 - **VaultCreated**: Emitted when a new vault is created
-
   - `vault_id: ID`: ID of the created vault
   - `owner: address`: Address of the vault owner
 
 - **ItemCreated**: Emitted when a new item is added to a vault
-
   - `item_id: ID`: ID of the created item
   - `vault_id: ID`: ID of the vault containing the item
   - `name: String`: Name of the item
   - `category: String`: Category of the item
 
 - **ItemUpdated**: Emitted when an item is updated
-
   - `item_id: ID`: ID of the updated item
   - `vault_id: ID`: ID of the vault containing the item
 
@@ -51,101 +48,144 @@ The vault module handles the creation and management of password vaults and item
 
 ### Functions
 
-- `create_vault_entry(name: String, ctx: &mut TxContext)`: Creates a new vault
+- `create_vault_entry(name: String, ctx: &mut TxContext)`
+  - Creates a new vault and transfers ownership (Cap) to sender.
 
-  - **Parameters**:
-    - `name`: Name of the vault to create
-    - `ctx`: Transaction context
-  - **Output**: Creates and transfers a Vault and Cap object to the sender
+- `create_item_entry(cap: &Cap, name: String, category: String, vault: &mut Vault, nonce: vector<u8>, walrus_blob_id: String, ctx: &mut TxContext)`
+  - Creates a new item linked to a vault. Requires vault Cap.
 
-- `create_item_entry(cap: &Cap, name: String, category: String, vault: &Vault, data: vector<u8>, ctx: &mut TxContext)`: Creates a new item in a vault
+- `update_item(cap: &Cap, name: String, walrus_blob_id: String, item: &mut Item)`
+  - Updates item name and blob ID. Requires vault Cap.
 
-  - **Parameters**:
-    - `cap`: Capability object proving ownership of the vault
-    - `name`: Name of the item
-    - `category`: Category of the item
-    - `vault`: Reference to the vault
-    - `data`: Encrypted data to store
-    - `ctx`: Transaction context
-  - **Output**: Creates and shares an Item object
+- `delete_item(cap: &Cap, vault: &mut Vault, item: Item)`
+  - Deletes an item and removes it from the vault. Requires vault Cap.
 
-- `update_item(cap: &Cap, name: String, vault: &Vault, data: vector<u8>, item: &mut Item)`: Updates an existing item
-
-  - **Parameters**:
-    - `cap`: Capability object proving ownership
-    - `name`: New name for the item
-    - `vault`: Reference to the vault
-    - `data`: New encrypted data
-    - `item`: Mutable reference to the item being updated
-  - **Output**: Updates the item and emits an ItemUpdated event
-
-- `delete_item(cap: &Cap, item: Item)`: Deletes an item
-
-  - **Parameters**:
-    - `cap`: Capability object proving ownership
-    - `item`: Item to delete
-  - **Output**: Deletes the item and emits an ItemDeleted event
-
-- `seal_approve(cap: &Cap, item: &Item)`: Verifies access rights to an item
-  - **Parameters**:
-    - `cap`: Capability object
-    - `item`: Item to verify access for
-  - **Output**: Throws an error if access is not allowed
+- `seal_approve(id: vector<u8>, vault: &Vault, item: &Item)`
+  - Verifies access policy for an item based on ID prefix matching.
 
 ## Share Module
 
-The share module enables secure sharing of vault items with other users.
+The share module enables secure sharing of vault items with other users via time-limited access.
 
 ### Structs
 
-- **Share**: Represents a sharing permission for an item
+- **Share**: Represents a sharing permission
   - `id: UID`: Unique identifier
+  - `vault_id: ID`: ID of the vault
   - `item_id: ID`: ID of the shared item
-  - `recipients: vector<address>`: List of addresses that can access the item
-  - `consumed: bool`: Whether the share has been used (for one-time access)
-  - `one_time_access: bool`: Whether this is a one-time access share
-  - `created_at: u64`: Timestamp when the share was created (in milliseconds)
-  - `ttl: u64`: Time-to-live duration in milliseconds
+  - `recipients: vector<address>`: Authorized recipient addresses
+  - `created_at: u64`: Creation timestamp (ms)
+  - `ttl: u64`: Time-to-live duration (ms)
+
+- **Cap**: Capability to manage a share object
+  - `share_id: ID`: ID of the controlled share
 
 ### Events
 
-- **ShareCreated**: Emitted when a new share is created
-  - `item_id: ID`: ID of the shared item
-  - `recipients: vector<address>`: List of recipient addresses
-  - `created_at: u64`: Timestamp when created
-  - `ttl: u64`: Time-to-live duration
+- **ShareCreated**: Emitted when a share is created
+  - `item_id: ID`: Shared item ID
+  - `recipients: vector<address>`: Authorized recipients
+  - `created_at: u64`: Creation timestamp
+  - `ttl: u64`: Duration
 
 ### Functions
 
-- `share_item_entry(cap: &Cap, item: &Item, recipients: vector<address>, created_at: u64, ttl: u64, one_time_access: bool, ctx: &mut TxContext)`: Creates a new share for an item
+- `share_item_entry(vault: &Vault, item: &Item, recipients: vector<address>, created_at: u64, ttl: u64, ctx: &mut TxContext)`
+  - Creates a shared access object for an item.
 
-  - **Parameters**:
-    - `cap`: Capability object proving ownership
-    - `item`: Item to be shared
-    - `recipients`: List of addresses to share with
-    - `created_at`: Current timestamp in milliseconds
-    - `ttl`: Time-to-live duration in milliseconds
-    - `one_time_access`: Whether this is a one-time access share
-    - `ctx`: Transaction context
-  - **Output**: Creates and shares a Share object and emits a ShareCreated event
+- `update_share_item(cap: &Cap, share: &mut Share, recipients: vector<address>, ttl: u64)`
+  - Updates recipients or TTL of an existing share.
 
-- `seal_approve(item: &Item, share: &Share, c: &Clock, ctx: &TxContext)`: Verifies access rights to a shared item
-  - **Parameters**:
-    - `item`: Item being accessed
-    - `share`: Share object granting access
-    - `c`: Clock object for timestamp verification
-    - `ctx`: Transaction context
-  - **Output**: Throws an error if access is not allowed
+- `delete_share_item(cap: Cap, share: Share)`
+  - Revokes access by deleting the share object.
 
-## Usage in JavaScript
+- `seal_approve(id: vector<u8>, share: &Share, c: &Clock, ctx: &TxContext)`
+  - Validates access for a recipient within the TTL window.
 
-When interacting with these contracts from JavaScript:
+## DeadMan Module
 
-1. Use the `create_vault_entry` function to create a new vault
-2. Use the `create_item_entry` function to add items to the vault
-3. Use the `share_item_entry` function to share items with other users
-4. Listen for events like `VaultCreated`, `ItemCreated`, and `ShareCreated` to track changes
+The deadman module implements a dead man's switch for inheritance or emergency access.
 
-The Cap object is crucial for authorization - it must be provided for most operations to prove ownership of a vault.
+### Structs
 
-### Example JavaScript Integration
+- **DeadManSwitch**: The switch object
+  - `vault_id: ID`: ID of the protected vault
+  - `owner: address`: Creator/Owner address
+  - `beneficiary: address`: Heir address
+  - `inactivity_period_ms: u64`: Required inactivity duration before claim
+  - `last_activity_ms: u64`: Timestamp of last heartbeat
+  - `cap: Option<Cap>`: The vault Cap (held in escrow)
+  - `claimed: bool`: Status flag
+
+### Events
+
+- `SwitchCreated`, `SwitchUpdated`, `SwitchClaimed`, `SwitchDisabled`
+
+### Functions
+
+- `setup(vault: &Vault, cap: Cap, beneficiary: address, inactivity_period_ms: u64, clock: &Clock, ctx: &mut TxContext)`
+  - Initializes the switch and locks the vault Cap inside.
+
+- `heartbeat(switch: &mut DeadManSwitch, clock: &Clock, ctx: &TxContext)`
+  - Resets the inactivity timer. Callable only by owner.
+
+- `claim(switch: &mut DeadManSwitch, clock: &Clock, ctx: &mut TxContext)`
+  - Transfers vault ownership to beneficiary if inactivity period has passed.
+
+- `disable(switch: DeadManSwitch, ctx: &TxContext)`
+  - Cancels the switch and returns the Cap to the owner.
+
+## Recovery Module
+
+The recovery module enables social recovery of a vault using guardians.
+
+### Structs
+
+- **Safe**: Shared object managing recovery state
+  - `vault_id: ID`: Protected vault ID
+  - `owner: address`: Current owner
+  - `guardians: vector<address>`: List of trusted guardians
+  - `threshold: u64`: Votes required to recover
+  - `cap: Option<Cap>`: Vault Cap (held in safe)
+  - `recovery_votes`: Tracks votes for new owners
+
+- **FlashReceipt**: Hot potato struct ensuring Cap return during borrowing
+
+### Events
+
+- `SafeCreated`, `RecoveryExecuted`, `SafeDisabled`
+
+### Functions
+
+- `create_safe(vault: &Vault, cap: Cap, guardians: vector<address>, threshold: u64, ctx: &mut TxContext)`
+  - Wraps a vault Cap in a recovery Safe.
+
+- `borrow_cap(safe: &mut Safe, ctx: &TxContext): (Cap, FlashReceipt)`
+  - Temporarily borrows Cap for transaction usage. Must be returned same transaction.
+
+- `return_cap(safe: &mut Safe, cap: Cap, receipt: FlashReceipt)`
+  - Returns the borrowed Cap to the Safe.
+
+- `approve_recovery(safe: &mut Safe, new_owner: address, ctx: &TxContext)`
+  - Guardian votes to transfer ownership. Executes recovery if threshold met.
+
+- `disable_recovery(safe: Safe, ctx: &TxContext)`
+  - Destroys the Safe and returns Cap to owner.
+
+## JavaScript Integration Tips
+
+1. **Vault Management**:
+   - Always store the `Cap` object ID securely; it's required for all write operations.
+   - Use `seal_approve` for read-access verification.
+
+2. **Sharing**:
+   - Shares are shared objects; anyone can read them, but only `seal_approve` validates access.
+   - TTL is in milliseconds.
+
+3. **Social Recovery**:
+   - The `borrow_cap` and `return_cap` must be called in the same Programmable Transaction Block (PTB).
+   - This "Hot Potato" pattern ensures the Cap is never left in an unsafe state.
+
+4. **Dead Man's Switch**:
+   - Ensure `heartbeat` is called periodically before `inactivity_period_ms` expires.
+   - Minimum inactivity period is enforced (7 days).

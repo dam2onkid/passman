@@ -138,6 +138,10 @@ public(package) fun verify_cap(cap: &Cap, vault: &Vault): bool {
     cap.vault_id == object::id(vault)
 }
 
+public(package) fun cap_vault_id(cap: &Cap): ID {
+    cap.vault_id
+}
+
 public(package) fun transfer_ownership(old_cap: Cap, new_owner: address, ctx: &mut TxContext) {
     let Cap { id: cap_id, vault_id } = old_cap;
     object::delete(cap_id);
@@ -150,46 +154,34 @@ public(package) fun transfer_ownership(old_cap: Cap, new_owner: address, ctx: &m
     transfer::transfer(new_cap, new_owner);
 }
 
-// === Test ===
+// === Test Helpers ===
 
-#[test]
-fun new_vault_for_testing(): (Cap, Vault) {
+#[test_only]
+public fun create_vault_for_testing(ctx: &mut TxContext): (Vault, Cap) {
     use std::string::utf8;
-    let ctx = &mut tx_context::dummy();
-    let (vault, cap) = create_vault(utf8(b"test"), ctx);
-
-    (cap, vault)
+    create_vault(utf8(b"test_vault"), ctx)
 }
 
 #[test_only]
-fun destroy_for_testing(cap: Cap, vault: Vault) {
-    let Cap { id, .. } = cap;
-    object::delete(id);
+public fun create_item_for_testing(cap: &Cap, vault: &mut Vault, ctx: &mut TxContext): Item {
+    use std::string::utf8;
+    create_item(cap, utf8(b"test_item"), utf8(b"password"), vault, vector::empty(), utf8(b"blob_123"), ctx)
+}
+
+#[test_only]
+public fun destroy_vault_for_testing(vault: Vault) {
     let Vault { id, .. } = vault;
     object::delete(id);
 }
 
-#[test]
-fun new_item_for_testing(): Item {
-    use std::string::utf8;
-    use std::debug::print;
-    let ctx = &mut tx_context::dummy();
-    let (cap, vault) = new_vault_for_testing();
-    let mut _vault = vault;
-    let item = create_item(
-        &cap,
-        utf8(b"item_1"),
-        utf8(b"wallet"),
-        &mut _vault,
-        vector::empty(),
-        utf8(b"test_blob_id"),
-        ctx
-    );
-    let mut id = vector::empty();
-    id.append(object::id(&_vault).to_bytes());
-    let result = check_policy(id, &_vault, &item);
-    print(&result);
+#[test_only]
+public fun destroy_cap_for_testing(cap: Cap) {
+    let Cap { id, .. } = cap;
+    object::delete(id);
+}
 
-    destroy_for_testing(cap, _vault);
-    item
+#[test_only]
+public fun destroy_item_for_testing(item: Item) {
+    let Item { id, .. } = item;
+    object::delete(id);
 }

@@ -91,3 +91,35 @@ fun check_policy(id: vector<u8>, share: &Share, caller: address, c: &Clock): boo
 entry fun seal_approve(id: vector<u8>, share: &Share, c: &Clock, ctx: &TxContext) {
     assert!(check_policy(id,  share, ctx.sender(), c), ENoAccess)
 }
+
+// === Test Helpers ===
+
+#[test_only]
+public fun create_share_for_testing(
+    vault: &Vault,
+    item: &Item,
+    recipients: vector<address>,
+    created_at: u64,
+    ttl: u64,
+    ctx: &mut TxContext
+): (Share, Cap) {
+    share_item(vault, item, recipients, created_at, ttl, ctx)
+}
+
+#[test_only]
+public fun destroy_share_for_testing(share: Share, cap: Cap) {
+    let Share { id, .. } = share;
+    let Cap { id: cap_id, .. } = cap;
+    object::delete(id);
+    object::delete(cap_id);
+}
+
+#[test_only]
+public fun share_recipients(share: &Share): vector<address> {
+    share.recipients
+}
+
+#[test_only]
+public fun share_ttl(share: &Share): u64 {
+    share.ttl
+}

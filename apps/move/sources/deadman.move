@@ -148,3 +148,55 @@ entry fun disable(
     event::emit(SwitchDisabled { vault_id });
 }
 
+// === Test Helpers ===
+
+#[test_only]
+public fun create_switch_for_testing(
+    vault: &Vault,
+    cap: Cap,
+    beneficiary: address,
+    inactivity_period_ms: u64,
+    clock: &Clock,
+    ctx: &mut TxContext
+): DeadManSwitch {
+    assert!(passman::vault::verify_cap(&cap, vault), ENotOwner);
+
+    DeadManSwitch {
+        id: object::new(ctx),
+        vault_id: object::id(vault),
+        owner: ctx.sender(),
+        beneficiary,
+        inactivity_period_ms,
+        last_activity_ms: clock.timestamp_ms(),
+        cap: option::some(cap),
+        claimed: false
+    }
+}
+
+#[test_only]
+public fun destroy_switch_for_testing(switch: DeadManSwitch) {
+    let DeadManSwitch { id, cap, .. } = switch;
+    if (option::is_some(&cap)) {
+        let c = option::destroy_some(cap);
+        passman::vault::destroy_cap_for_testing(c);
+    } else {
+        option::destroy_none(cap);
+    };
+    object::delete(id);
+}
+
+#[test_only]
+public fun switch_owner(switch: &DeadManSwitch): address {
+    switch.owner
+}
+
+#[test_only]
+public fun switch_beneficiary(switch: &DeadManSwitch): address {
+    switch.beneficiary
+}
+
+#[test_only]
+public fun switch_claimed(switch: &DeadManSwitch): bool {
+    switch.claimed
+}
+
