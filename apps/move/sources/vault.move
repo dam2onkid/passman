@@ -25,7 +25,7 @@ public struct Vault has key {
     items: vector<ID>
 }
 
-public struct Cap has key {
+public struct Cap has key, store {
     id: UID,
     vault_id: ID
 }
