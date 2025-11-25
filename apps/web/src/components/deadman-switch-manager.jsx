@@ -85,8 +85,6 @@ export function DeadmanSwitchManager() {
       const tx = deadmanSwitch
         ? updateDeadmanSwitchTx({
             switchId: deadmanSwitch.id,
-            vaultId,
-            capId,
             beneficiary,
             inactivityPeriodMs,
           })
@@ -140,8 +138,6 @@ export function DeadmanSwitchManager() {
     try {
       const tx = heartbeatDeadmanSwitchTx({
         switchId: deadmanSwitch.id,
-        vaultId,
-        capId,
       });
 
       signAndExecuteTransaction(
@@ -168,8 +164,6 @@ export function DeadmanSwitchManager() {
     try {
       const tx = claimDeadmanSwitchTx({
         switchId: deadmanSwitch.id,
-        vaultId,
-        capId,
       });
 
       signAndExecuteTransaction(
@@ -196,8 +190,6 @@ export function DeadmanSwitchManager() {
     try {
       const tx = disableDeadmanSwitchTx({
         switchId: deadmanSwitch.id,
-        vaultId,
-        capId,
       });
 
       signAndExecuteTransaction(
@@ -219,7 +211,7 @@ export function DeadmanSwitchManager() {
 
   const isOwner =
     walletAddress &&
-    (deadmanSwitch ? deadmanSwitch.vault_id === vaultId : capId);
+    (deadmanSwitch ? deadmanSwitch.owner === walletAddress : capId);
   const isBeneficiary =
     walletAddress && deadmanSwitch?.beneficiary === walletAddress;
   const canClaim =

@@ -38,6 +38,7 @@ export function useFetchDeadmanSwitch(vaultId) {
               setDeadmanSwitch({
                 id: switchDetails.data.objectId,
                 vault_id: fields.vault_id,
+                owner: fields.owner,
                 beneficiary: fields.beneficiary,
                 inactivity_period_ms: Number(fields.inactivity_period_ms),
                 last_activity_ms: Number(fields.last_activity_ms),
@@ -98,6 +99,7 @@ export function useFetchDeadmanSwitch(vaultId) {
         const switchData = {
           id: switchDetails.data.objectId,
           vault_id: fields.vault_id,
+          owner: fields.owner,
           beneficiary: fields.beneficiary,
           inactivity_period_ms: Number(fields.inactivity_period_ms),
           last_activity_ms: Number(fields.last_activity_ms),
