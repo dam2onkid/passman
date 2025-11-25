@@ -205,3 +205,8 @@ public fun safe_guardians(safe: &Safe): vector<address> {
     safe.guardians
 }
 
+#[test_only]
+public fun share_safe_for_testing(safe: Safe) {
+    transfer::share_object(safe);
+}
+

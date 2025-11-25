@@ -185,3 +185,13 @@ public fun destroy_item_for_testing(item: Item) {
     let Item { id, .. } = item;
     object::delete(id);
 }
+
+#[test_only]
+public fun transfer_vault_for_testing(vault: Vault, recipient: address) {
+    transfer::transfer(vault, recipient);
+}
+
+#[test_only]
+public fun share_vault_for_testing(vault: Vault) {
+    transfer::share_object(vault);
+}

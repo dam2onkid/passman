@@ -160,6 +160,7 @@ public fun create_switch_for_testing(
     ctx: &mut TxContext
 ): DeadManSwitch {
     assert!(passman::vault::verify_cap(&cap, vault), ENotOwner);
+    assert!(inactivity_period_ms >= 7 * 24 * 60 * 60 * 1000, EMinimumPeriod);
 
     DeadManSwitch {
         id: object::new(ctx),
@@ -198,5 +199,10 @@ public fun switch_beneficiary(switch: &DeadManSwitch): address {
 #[test_only]
 public fun switch_claimed(switch: &DeadManSwitch): bool {
     switch.claimed
+}
+
+#[test_only]
+public fun share_switch_for_testing(switch: DeadManSwitch) {
+    transfer::share_object(switch);
 }
 

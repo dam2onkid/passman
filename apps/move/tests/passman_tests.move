@@ -3,11 +3,11 @@ module passman::passman_tests;
 
 use std::string::utf8;
 use sui::clock;
-use sui::test_scenario::{Self as ts, Scenario};
-use passman::vault::{Self, Vault, Cap, Item};
+use sui::test_scenario::{Self as ts};
+use passman::vault::{Self, Vault};
 use passman::deadman::{Self, DeadManSwitch};
-use passman::share::{Self, Share, Cap as ShareCap};
-use passman::recovery::{Self, Safe, FlashReceipt};
+use passman::share::{Self};
+use passman::recovery::{Self, Safe};
 
 const OWNER: address = @0xA;
 const BENEFICIARY: address = @0xB;
@@ -73,7 +73,7 @@ fun test_vault_create_item_wrong_cap() {
     let mut scenario = ts::begin(OWNER);
     let ctx = scenario.ctx();
 
-    let (mut vault1, cap1) = vault::create_vault_for_testing(ctx);
+    let (mut vault1, _cap1) = vault::create_vault_for_testing(ctx);
     let (_vault2, cap2) = vault::create_vault_for_testing(ctx);
 
     let _item = vault::create_item_for_testing(&cap2, &mut vault1, ctx);
@@ -126,8 +126,8 @@ fun test_deadman_heartbeat() {
             &clock,
             ctx
         );
-        transfer::public_share_object(switch);
-        transfer::public_transfer(vault, OWNER);
+        deadman::share_switch_for_testing(switch);
+        vault::transfer_vault_for_testing(vault, OWNER);
         clock::share_for_testing(clock);
     };
 
@@ -160,8 +160,8 @@ fun test_deadman_heartbeat_not_owner() {
             &clock,
             ctx
         );
-        transfer::public_share_object(switch);
-        transfer::public_transfer(vault, OWNER);
+        deadman::share_switch_for_testing(switch);
+        vault::transfer_vault_for_testing(vault, OWNER);
         clock::share_for_testing(clock);
     };
 
@@ -194,8 +194,8 @@ fun test_deadman_claim_not_expired() {
             &clock,
             ctx
         );
-        transfer::public_share_object(switch);
-        transfer::public_transfer(vault, OWNER);
+        deadman::share_switch_for_testing(switch);
+        vault::transfer_vault_for_testing(vault, OWNER);
         clock::share_for_testing(clock);
     };
 
@@ -329,7 +329,7 @@ fun test_share_update_wrong_cap() {
     let (mut vault, cap) = vault::create_vault_for_testing(ctx);
     let item = vault::create_item_for_testing(&cap, &mut vault, ctx);
 
-    let (mut share1, share_cap1) = share::create_share_for_testing(
+    let (mut share1, _share_cap1) = share::create_share_for_testing(
         &vault, &item, vector[RECIPIENT], 0, 3600000, ctx
     );
     let (_share2, share_cap2) = share::create_share_for_testing(
@@ -373,8 +373,8 @@ fun test_recovery_borrow_and_return_cap() {
         let guardians = vector[GUARDIAN1, GUARDIAN2, GUARDIAN3];
         let safe = recovery::create_safe_for_testing(&vault, cap, guardians, 2, ctx);
 
-        transfer::public_share_object(safe);
-        transfer::public_transfer(vault, OWNER);
+        recovery::share_safe_for_testing(safe);
+        vault::transfer_vault_for_testing(vault, OWNER);
     };
 
     scenario.next_tx(OWNER);
@@ -404,8 +404,8 @@ fun test_recovery_borrow_cap_not_owner() {
         let guardians = vector[GUARDIAN1, GUARDIAN2, GUARDIAN3];
         let safe = recovery::create_safe_for_testing(&vault, cap, guardians, 2, ctx);
 
-        transfer::public_share_object(safe);
-        transfer::public_transfer(vault, OWNER);
+        recovery::share_safe_for_testing(safe);
+        vault::transfer_vault_for_testing(vault, OWNER);
     };
 
     scenario.next_tx(GUARDIAN1);
@@ -426,8 +426,8 @@ fun test_recovery_approve_single_vote() {
         let guardians = vector[GUARDIAN1, GUARDIAN2, GUARDIAN3];
         let safe = recovery::create_safe_for_testing(&vault, cap, guardians, 2, ctx);
 
-        transfer::public_share_object(safe);
-        transfer::public_transfer(vault, OWNER);
+        recovery::share_safe_for_testing(safe);
+        vault::transfer_vault_for_testing(vault, OWNER);
     };
 
     scenario.next_tx(GUARDIAN1);
@@ -453,8 +453,8 @@ fun test_recovery_approve_threshold_met() {
         let guardians = vector[GUARDIAN1, GUARDIAN2, GUARDIAN3];
         let safe = recovery::create_safe_for_testing(&vault, cap, guardians, 2, ctx);
 
-        transfer::public_share_object(safe);
-        transfer::public_transfer(vault, OWNER);
+        recovery::share_safe_for_testing(safe);
+        vault::transfer_vault_for_testing(vault, OWNER);
     };
 
     scenario.next_tx(GUARDIAN1);
@@ -486,8 +486,8 @@ fun test_recovery_approve_not_guardian() {
         let guardians = vector[GUARDIAN1, GUARDIAN2, GUARDIAN3];
         let safe = recovery::create_safe_for_testing(&vault, cap, guardians, 2, ctx);
 
-        transfer::public_share_object(safe);
-        transfer::public_transfer(vault, OWNER);
+        recovery::share_safe_for_testing(safe);
+        vault::transfer_vault_for_testing(vault, OWNER);
     };
 
     scenario.next_tx(RECIPIENT);
@@ -509,8 +509,8 @@ fun test_recovery_approve_duplicate_vote() {
         let guardians = vector[GUARDIAN1, GUARDIAN2, GUARDIAN3];
         let safe = recovery::create_safe_for_testing(&vault, cap, guardians, 2, ctx);
 
-        transfer::public_share_object(safe);
-        transfer::public_transfer(vault, OWNER);
+        recovery::share_safe_for_testing(safe);
+        vault::transfer_vault_for_testing(vault, OWNER);
     };
 
     scenario.next_tx(GUARDIAN1);
