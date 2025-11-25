@@ -57,6 +57,61 @@ Robust and efficient storage for your encrypted data.
 - **Cost-Effective**: Efficient storage for large encrypted payloads without clogging the main chain.
 - **High Availability**: Redundant storage ensures your data is always accessible.
 
+## 🛡️ Smart Vault Protection (Safe)
+
+Passman introduces the **Safe** module - a unified security layer that protects your vault with two powerful mechanisms:
+
+### 🤝 Social Recovery
+
+Never lose access to your vault, even if you lose your keys.
+
+- **Multi-Signature Protection**: Designate trusted guardians (friends, family, or other devices) who can help you recover access.
+- **Threshold-Based**: Set a minimum number of guardian approvals required (e.g., 2 out of 3 guardians).
+- **Decentralized Trust**: No single guardian can access your vault alone - they must collaborate.
+- **Flexible Management**: Update your guardian list and threshold at any time.
+- **Secure Process**: Guardians vote on-chain to approve recovery to a new owner address.
+
+**How it works:**
+
+1. Set up guardians when creating a Safe (or update them later)
+2. If you lose access, request recovery through your guardians
+3. Guardians vote to approve the new owner address
+4. Once the threshold is met, ownership transfers automatically
+
+### ⏰ Deadman Switch
+
+Ensure your digital legacy is passed on to loved ones.
+
+- **Automatic Inheritance**: Designate a beneficiary who inherits your vault after a period of inactivity.
+- **Customizable Period**: Set the inactivity period (minimum 7 days) that suits your needs.
+- **Heartbeat System**: Regular activity automatically resets the timer - no manual action needed.
+- **Manual Heartbeat**: Explicitly record activity to reset the timer if desired.
+- **Secure Transfer**: After the inactivity period expires, only the designated beneficiary can claim ownership.
+- **Flexible Updates**: Change beneficiary or inactivity period at any time.
+
+**How it works:**
+
+1. Set up a beneficiary and inactivity period when creating a Safe
+2. Your activity automatically resets the deadman timer
+3. If inactive for the specified period, your beneficiary can claim the vault
+4. Ownership transfers on-chain, giving them full control
+
+### 🔐 Flash Loan Pattern
+
+The Safe uses an innovative "flash loan" pattern to maintain security while allowing vault operations:
+
+- **Temporary Access**: Borrow your vault capability (Cap) within a transaction.
+- **Guaranteed Return**: The Cap must be returned before the transaction completes.
+- **No Compromise**: Maintains all Safe protections while enabling normal vault operations.
+- **Seamless UX**: Users interact with their vault normally - the Safe works behind the scenes.
+
+### 🎛️ Flexible Configuration
+
+- **Optional Features**: Enable social recovery, deadman switch, both, or neither.
+- **Update Anytime**: Modify guardians, threshold, beneficiary, or inactivity period as needed.
+- **Disable Safe**: Remove Safe protection and return to direct vault ownership at any time.
+- **Event Tracking**: All Safe actions emit events for transparency and auditability.
+
 ## ⚙️ Technical Architecture
 
 How it all comes together:
@@ -65,11 +120,14 @@ How it all comes together:
 2.  **Encryption**: When you save a password, **Seal** encrypts the data client-side using threshold keys.
 3.  **Storage**: The encrypted blob is uploaded to **Walrus**, returning a unique Blob ID.
 4.  **Consensus**: The Blob ID and metadata are stored in a `Vault` object on **Sui**, linking your identity to your data.
+5.  **Protection**: Optionally wrap your vault in a `Safe` to enable social recovery and/or deadman switch features.
 
 ## ✨ Key Features
 
 - **100% Decentralized**: Zero reliance on centralized servers.
-- **Deadman Switch**: Set up a trusted contact to inherit access to your vault after a period of inactivity.
+- **Smart Vault Protection (Safe)**: Advanced security mechanisms to protect your vault:
+  - **Social Recovery**: Multi-signature recovery through trusted guardians
+  - **Deadman Switch**: Automatic ownership transfer after owner inactivity
 - **Vault Sharing**: Securely share password vaults with other users on the network.
 - **Cross-Device Sync**: Access your passwords anywhere by simply logging into your Google account.
 - **Modern UI**: A beautiful interface built with Next.js, React, and TailwindCSS.
@@ -125,10 +183,10 @@ passman/
 │   │   └── manifest.json
 │   ├── move/            # Sui Move smart contracts
 │   │   ├── sources/     # Contract source files
-│   │   │   ├── vault.move
-│   │   │   ├── share.move
-│   │   │   ├── deadman.move
-│   │   │   └── utils.move
+│   │   │   ├── vault.move   # Core vault & item management
+│   │   │   ├── safe.move    # Social recovery & deadman switch
+│   │   │   ├── share.move   # Secure vault sharing
+│   │   │   └── utils.move   # Helper utilities
 │   │   └── tests/       # Contract tests
 │   └── web/             # Next.js web application
 │       └── src/
