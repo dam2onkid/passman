@@ -17,11 +17,17 @@ function RegisterEnokiWallets() {
   useEffect(() => {
     if (!isEnokiNetwork(network)) return;
 
+    const redirectUrl =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/login`
+        : undefined;
+
     const { unregister } = registerEnokiWallets({
       apiKey: process.env.NEXT_PUBLIC_ENOKI_PUBLIC_KEY,
       providers: {
         google: {
           clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+          redirectUrl,
         },
       },
       client,
