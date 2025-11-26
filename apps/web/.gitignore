@@ -37,6 +37,7 @@ yarn-error.log*
 
 # env files (cân nhắc nếu muốn commit riêng)
 .env*
+!.env.example
 
 # vercel
 .vercel/
