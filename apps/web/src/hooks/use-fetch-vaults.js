@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSuiWallet } from "./use-sui-wallet";
 import useVaultStore from "@/store/vault-store";
 import { useNetworkVariable } from "@passman/utils/network-config";
 import { PACKAGE_ID } from "@passman/utils";
+import { useSafeEventSubscription } from "./use-safe-event-subscription";
 
-const INTERVAL = 3000;
+const POLL_INTERVAL = 5000;
 
 export default function useVaults() {
   const { currentAccount, client: suiClient, isConnected } = useSuiWallet();
@@ -15,12 +16,26 @@ export default function useVaults() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { activeVaultCapPair, setActiveVaultCapPair } = useVaultStore();
+  const fetchInProgressRef = useRef(false);
+  const fetchVaultsRef = useRef(null);
 
-  async function fetchVaultsAndCaps() {
-    if (!currentAccount?.address) {
-      setLoading(false);
+  const handleVaultChange = useCallback(
+    (eventType, data) => {
+      console.log(`[VaultSync] Event: ${eventType}`, data);
+      fetchVaultsRef.current?.();
+    },
+    []
+  );
+
+  useSafeEventSubscription(currentAccount?.address, handleVaultChange);
+
+  const fetchVaultsAndCaps = useCallback(async () => {
+    if (!currentAccount?.address || fetchInProgressRef.current) {
+      if (!currentAccount?.address) setLoading(false);
       return;
     }
+
+    fetchInProgressRef.current = true;
 
     try {
       setLoading(true);
@@ -157,8 +172,13 @@ export default function useVaults() {
       setError(err.message || "Failed to fetch vaults");
     } finally {
       setLoading(false);
+      fetchInProgressRef.current = false;
     }
-  }
+  }, [currentAccount?.address, suiClient, activeVaultCapPair, setActiveVaultCapPair]);
+
+  useEffect(() => {
+    fetchVaultsRef.current = fetchVaultsAndCaps;
+  }, [fetchVaultsAndCaps]);
 
   useEffect(() => {
     if (!isConnected) {
@@ -168,7 +188,7 @@ export default function useVaults() {
 
   useEffect(() => {
     fetchVaultsAndCaps();
-  }, [currentAccount?.address, suiClient]);
+  }, [fetchVaultsAndCaps]);
 
   return {
     vaultCapPairs,
